@@ -36,3 +36,34 @@ ln -sf software.linux software
 
 ### Run initial test to check for further problems and unmet dependencies
 #time perl GenomeChronicler_mainDruid.pl --bamFile=testData/tester_1_GRCh38.bam --vepFile=testData/tester_1_VEP.html
+
+
+### Other deps
+
+# # R
+#TeachingDemos package
+#RColorBrewer package
+
+# # perl
+#cpan File::chdir
+#cpan Config::General
+#cpan Data::Dumper
+#cpan Excel::Writer::XLSX
+#cpan DBI
+#cpan DBD::SQLite
+
+# # LaTeX
+# booktabs
+# calc
+# fullpage
+# csvsimple
+# fancyhdr
+# lastpage
+# inputenc
+# fontenc
+# longtable
+# multicol
+# xcolor
+# tikz
+# hyperref
+
