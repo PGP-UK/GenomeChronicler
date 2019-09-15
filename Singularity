@@ -19,6 +19,7 @@ apt-get -y update
 apt-get -y install r-base-core
 
 apt-get -y install tk-dev
+apt-get -y install mesa-common-dev
 
 # Install required R packages
 R --slave -e 'install.packages("RColorBrewer", dependencies=TRUE, repos = "http://cran.us.r-project.org")'
