@@ -25,7 +25,7 @@ apt-get -y update
 #add-apt-repository ppa:webupd8team/java
 add-apt-repository ppa:linuxuprising/java
 apt-get -y update
-apt-get install oracle-java8-set-default
+apt-get install oracle-java11-set-default-local
 
 
 #apt-get -y update
