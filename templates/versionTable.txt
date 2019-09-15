@@ -1,0 +1,10 @@
+Resource	Version	Website
+Genome	GRCh38	\href{http://www.ncbi.nlm.nih.gov/projects/genome/assembly/grc/human/}{Link}
+BWA	0.7.12	\href{http://bio-bwa.sourceforge.net}{Link}
+SAMtools	1.3	\href{http://www.htslib.org}{Link}
+GATK	3.4-46	\href{https://www.broadinstitute.org/gatk/}{Link}
+PLINK	v1.90b3.35	\href{http://pngu.mgh.harvard.edu/~purcell/plink/index.shtml}{Link}
+SNPedia	02-May-2019	\href{https://www.snpedia.com}{Link}
+GnomAD	v2.1.1	\href{http://gnomad.broadinstitute.org}{Link}
+GetEvidence	10-May-2019	\href{http://evidence.pgp-hms.org/about}{Link}
+ClinVar	10-May-2019	\href{http://www.ncbi.nlm.nih.gov/clinvar/}{Link}
