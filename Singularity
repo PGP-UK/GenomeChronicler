@@ -15,16 +15,19 @@ cd /GenomeChroniclerDev
 apt-get -y update
 
 
-add-apt-repository ppa:webupd8team/java
-apt-get -y update
-apt-get install oracle-java8-set-default
 
 
 apt-get install -y apt-transport-https software-properties-common
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
 add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/'
-
 apt-get -y update
+
+add-apt-repository ppa:webupd8team/java
+apt-get -y update
+apt-get install oracle-java8-set-default
+
+
+#apt-get -y update
 apt-get -y install r-base-core
 
 apt-get -y install tk-dev
