@@ -24,9 +24,9 @@ apt-get -y update
 echo debconf shared/accepted-oracle-license-v1-2 select true | debconf-set-selections
 echo debconf shared/accepted-oracle-license-v1-2 seen true | debconf-set-selections
 
-debconf-set-selections <<< "oracle-java11-installer-local shared/seen-oracle-license-v1-2 boolean true"
-debconf-set-selections <<< "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 boolean true"
-apt-get -y --force-yes install oracle-java11-installer-local oracle-java11-set-default-local
+#debconf-set-selections <<< "oracle-java12-installer shared/seen-oracle-license-v1-2 boolean true"
+#debconf-set-selections <<< "oracle-java12-installer shared/accepted-oracle-license-v1-2 boolean true"
+apt-get -y --force-yes install oracle-java12-installer oracle-java12-set-default
 
 #apt-get -y update
 apt-get -y install r-base-core
