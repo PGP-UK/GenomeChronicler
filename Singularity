@@ -20,6 +20,9 @@ add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran
 add-apt-repository ppa:linuxuprising/java
 
 apt-get -y update
+
+echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
+echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections
 apt-get -y --force-yes install oracle-java11-installer-local oracle-java11-set-default-local
 
 #apt-get -y update
