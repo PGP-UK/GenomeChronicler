@@ -58,7 +58,7 @@ git clone https://github.com/afonsoguerra/GenomeChroniclerDev.git
 
 
 # Running GenomeChronicler Setup
-cd GenomeChronicler
+cd GenomeChroniclerDev
 bash SetupMeFirst.sh
 ln -sf GenomeChronicler_mainDruid.pl genomechronicler
 chmod +x GenomeChronicler_mainDruid.pl
