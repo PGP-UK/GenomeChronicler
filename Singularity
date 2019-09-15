@@ -2,7 +2,10 @@ Bootstrap: docker
 From: ubuntu:bionic
 
 %runscript
-echo "Running the container.."
+echo "Starting the GenomeChronicler container.."
+
+cd /GenomeChroniclerDev
+./genomechronicler --help
 
 %post
 
@@ -10,6 +13,12 @@ echo "Running the container.."
 #  (do it this way otherwise by default will install 3.2)
 
 apt-get -y update
+
+
+add-apt-repository ppa:webupd8team/java
+apt-get -y update
+apt-get install oracle-java8-set-default
+
 
 apt-get install -y apt-transport-https software-properties-common
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
