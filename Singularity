@@ -21,28 +21,30 @@ apt-get -y install r-base-core
 apt-get -y install tk-dev
 apt-get -y install mesa-common-dev libglu1-mesa-dev #Satisfying dependencies for rgl that seems to be required below for RColorBrewer
 
+
+# Installing perl modules
+
+apt-get -y install wget
+wget -O - http://cpanmin.us | perl - --self-upgrade #Attempting to automatically configure CPAN
+
+cpan File::chdir
+cpan Config::General
+cpan Data::Dumper
+cpan Excel::Writer::XLSX
+cpan DBI
+cpan DBD::SQLite
+
+
+
 # Install required R packages
 R --slave -e 'install.packages("RColorBrewer", dependencies=TRUE, repos = "http://cran.us.r-project.org")'
 R --slave -e 'install.packages("TeachingDemos", dependencies=TRUE, repos = "http://cran.us.r-project.org")'
 
 
 
-
-# Installing perl modules
-
-cpan -P File::chdir
-cpan -P Config::General
-cpan -P Data::Dumper
-cpan -P Excel::Writer::XLSX
-cpan -P DBI
-cpan -P DBD::SQLite
-
-
-
 # Installing LaTeX stuff
 #apt-get -y --no-install-recommends install texlive-latex-base texlive-fonts-recommended texlive-latex-extra lmodern
 apt-get -y install texlive-latex-base texlive-fonts-recommended texlive-latex-extra lmodern
-apt-get -y install wget
 
 
 # Installing extra software
