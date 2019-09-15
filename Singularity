@@ -29,12 +29,12 @@ R --slave -e 'install.packages("TeachingDemos", dependencies=TRUE, repos = "http
 
 # Installing perl modules
 
-cpan File::chdir
-cpan Config::General
-cpan Data::Dumper
-cpan Excel::Writer::XLSX
-cpan DBI
-cpan DBD::SQLite
+cpan -P File::chdir
+cpan -P Config::General
+cpan -P Data::Dumper
+cpan -P Excel::Writer::XLSX
+cpan -P DBI
+cpan -P DBD::SQLite
 
 
 
@@ -66,6 +66,6 @@ chmod +x genomechronicler
 export LC_ALL=C
 export PATH=$PATH:$PWD
 
-genomechronicler
+#genomechronicler
 
 
