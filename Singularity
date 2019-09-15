@@ -54,7 +54,7 @@ apt-get -y install git
 
 
 # Getting GenomeChronicler Repo
-git clone git@github.com:PGP-UK/GenomeChronicler.git
+git clone https://github.com/afonsoguerra/GenomeChroniclerDev.git
 
 
 # Running GenomeChronicler Setup
