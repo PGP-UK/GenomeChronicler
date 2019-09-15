@@ -20,7 +20,7 @@ add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran
 add-apt-repository ppa:linuxuprising/java
 
 apt-get -y update
-apt-get -y install oracle-java11-set-default-local
+apt-get -y --force-yes install oracle-java11-installer oracle-java11-set-default-local
 
 #apt-get -y update
 apt-get -y install r-base-core
