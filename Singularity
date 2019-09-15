@@ -22,7 +22,8 @@ apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB
 add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/'
 apt-get -y update
 
-add-apt-repository ppa:webupd8team/java
+#add-apt-repository ppa:webupd8team/java
+add-apt-repository ppa:linuxuprising/java
 apt-get -y update
 apt-get install oracle-java8-set-default
 
