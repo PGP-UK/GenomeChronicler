@@ -15,7 +15,7 @@ use File::chdir;
 my $template_withVEP = "templates/reportTemplate_withVEP.tex";
 my $template_ohneVEP = "templates/reportTemplate_ohneVEP.tex";
 my $template = $template_ohneVEP;
-my $dir="./";
+my $dir="/GenomeChroniclerDev/";
 
 
 #Take BAM from input;

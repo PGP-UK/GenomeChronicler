@@ -5,7 +5,9 @@ From: ubuntu:bionic
 echo "Starting the GenomeChronicler container.."
 
 cd /GenomeChroniclerDev
-./genomechronicler --help
+
+echo "Running GenomeChronicler itself"
+./genomechronicler
 
 %post
 

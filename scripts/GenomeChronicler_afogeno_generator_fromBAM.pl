@@ -5,7 +5,7 @@ use strict;
 use File::Basename;
 
 
-my $dir="./";
+my $dir="/GenomeChroniclerDev/";
 
 
 my $inputBED = "reference/snps.19-114.unique.nochr.bed";

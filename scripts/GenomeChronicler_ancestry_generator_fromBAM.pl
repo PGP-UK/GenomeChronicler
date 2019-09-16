@@ -14,7 +14,7 @@ use Exporter qw(import);
 
 
 
-my $dir="./";
+my $dir="/GenomeChroniclerDev/";
 
 #- Also needs tabix and R in the PATH
 
