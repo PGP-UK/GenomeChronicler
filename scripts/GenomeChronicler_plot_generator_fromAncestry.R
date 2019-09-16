@@ -4,7 +4,7 @@ library(TeachingDemos)
 sample <- as.character(Sys.getenv("SAMPLE"))
 id <- as.character(Sys.getenv("ID"))
 
-data <- read.table(paste0("./results/results_",sample,"/temp/",sample, "_1kGP_pruned_pca_20.eigenvec"), header=F)
+data <- read.table(paste0("results/results_",sample,"/temp/",sample, "_1kGP_pruned_pca_20.eigenvec"), header=F)
 
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 mypalette = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
@@ -155,7 +155,7 @@ for(i in 1:length(zoom_data[,1])){
 }
 
 #pdf(paste0("./results/results_",sample,"/",sample, "_ancestry_pca.pdf"))
-pdf(paste0("./results/results_",sample,"/AncestryPlot.pdf"))
+pdf(paste0("results/results_",sample,"/AncestryPlot.pdf"))
 
 plot(data[, 3] + 0.5 * data[, 4] - 0.5 * data[, 5], sin(pi / 3) * data[,4] + sin(pi / 3) * data[, 5], col = all.colors, pch = 19, cex = 0.3, xaxt='n', yaxt='n', xlab="", ylab="", main=paste0("Ancestry ",id))
 points(data[pgp, 3] + 0.5 * data[pgp, 4] - 0.5 * data[pgp, 5], sin(pi / 3) * data[pgp,4] + sin(pi / 3) * data[pgp, 5], col = "black", pch = 16, cex = 1)

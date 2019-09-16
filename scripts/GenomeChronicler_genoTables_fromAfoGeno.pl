@@ -27,7 +27,7 @@ $outdir = $ARGV[1] if(defined($ARGV[1]));
 
 my $driver   = "SQLite";
 
-my $database = "reference/snpedia.db";
+my $database = "${dir}reference/snpedia.db";
 my $dsn = "DBI:$driver:dbname=$database";
 my $dbh = DBI->connect($dsn, "", "", { RaiseError => 1 }) or die $DBI::errstr;
 print "Opened database successfully [SNPedia]\n";
@@ -47,7 +47,7 @@ my $sth1g = $dbh->prepare( 'select * from genoset where id=?' );
 #my $sth2 = $dbh2->prepare('select * from data where chr=? and coord=?');
 
 
-my $database3 = "reference/gnomad.db";
+my $database3 = "${dir}reference/gnomad.db";
 my $dsn3 = "DBI:$driver:dbname=$database3";
 my $dbh3 = DBI->connect($dsn3, "", "", { RaiseError => 1 })
 or die $DBI::errstr;
@@ -55,7 +55,7 @@ print "Opened database successfully [GnomAD]\n";
 my $sth3 = $dbh3->prepare('select * from data where rsid=?');
 
 
-my $database4 = "reference/getevidence.db";
+my $database4 = "${dir}reference/getevidence.db";
 my $dsn4 = "DBI:$driver:dbname=$database4";
 my $dbh4 = DBI->connect($dsn4, "", "", { RaiseError => 1 })
 or die $DBI::errstr;
@@ -63,7 +63,7 @@ print "Opened database successfully [GetEvidence]\n";
 my $sth4 = $dbh4->prepare('select * from data where dbsnp_id=?');
 
 
-my $database5 = "reference/clinvar.db";
+my $database5 = "${dir}reference/clinvar.db";
 my $dsn5 = "DBI:$driver:dbname=$database5";
 my $dbh5 = DBI->connect($dsn5, "", "", { RaiseError => 1 })
 or die $DBI::errstr;
@@ -76,7 +76,7 @@ my $sth5 = $dbh5->prepare('select * from data where rsid=?');
 
 
 #Note: This is probably useless and never worked 100%, so it is ready to be deleted (just create the array from sorted keys from the hash below).
-open(IN, "reference/genosetDependencies.txt") or die "Could not open input file: $!\n";
+open(IN, "${dir}reference/genosetDependencies.txt") or die "Could not open input file: $!\n";
 my @allGenosets;
 while (my $line = <IN>) {
     chomp($line);
@@ -89,7 +89,7 @@ close IN;
 #die Dumper(\@allGenosets);
 
 
-open(IN, "reference/parsedGenosets.txt") or die "Could not open input file: $!\n";
+open(IN, "${dir}reference/parsedGenosets.txt") or die "Could not open input file: $!\n";
 my %genosets;
 my %genotypes;
 while (my $line = <IN>) {
