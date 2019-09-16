@@ -370,7 +370,7 @@ sub cleanBAMfile_noCHR() {
 
 	my $filename = shift;
 
-	open(IN, "samtools view -H $filename |") or die "Could not open input file: $!\n";
+	open(IN, "${dir}/software/samtools view -H $filename |") or die "Could not open input file: $!\n";
 	open(OUT, ">$filename.tempHeader") or die "Could not open output file: $!\n";
 
 	while (my $line = <IN>) {
@@ -387,8 +387,8 @@ sub cleanBAMfile_noCHR() {
 	close OUT;
 
 
-	system("samtools reheader $filename.tempHeader $filename > $filename.clean.BAM");
-	system("samtools index $filename.clean.BAM");
+	system("${dir}/software/samtools reheader $filename.tempHeader $filename > $filename.clean.BAM");
+	system("${dir}/software/samtools index $filename.clean.BAM");
 
 	#system("mv $filename.tempBAM $filename");
 	system("rm $filename.tempHeader")
