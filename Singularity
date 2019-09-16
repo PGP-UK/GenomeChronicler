@@ -4,10 +4,10 @@ From: ubuntu:bionic
 %runscript
 echo "Starting the GenomeChronicler container.."
 
-cd /GenomeChroniclerDev
+#cd /GenomeChroniclerDev
 
 echo "Running GenomeChronicler itself"
-./genomechronicler
+perl /GenomeChroniclerDev/genomechronicler
 
 %post
 
