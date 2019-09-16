@@ -21,6 +21,8 @@ add-apt-repository ppa:linuxuprising/java
 
 apt-get -y update
 
+apt-get -y install openjdk-8-jdk
+
 echo debconf shared/accepted-oracle-license-v1-2 select true | debconf-set-selections
 echo debconf shared/accepted-oracle-license-v1-2 seen true | debconf-set-selections
 
