@@ -73,7 +73,7 @@ tar -vxjf bcftools-1.9.tar.bz2
 cd bcftools-1.9
 make
 
-
+cd /
 
 
 # Install required R packages
