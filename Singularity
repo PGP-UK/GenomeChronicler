@@ -65,6 +65,7 @@ apt-get -y install texlive-latex-base texlive-fonts-recommended texlive-latex-ex
 
 
 # Installing extra software
+apt-get -y install libssl
 apt-get -y install libssl-dev
 apt-get -y install libcurl4-openssl-dev
 apt-get -y install git
