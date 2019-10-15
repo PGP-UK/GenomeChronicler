@@ -150,11 +150,11 @@ EOP
 sub usage {
     print STDERR <<EOF
 
-\t+++ Welcome to GenomeChronicler - Version 19-257 +++
+\t+++ Welcome to GenomeChronicler - Version 19-288 +++
 
 [USAGE]
 $scriptName -h
-$scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFILE vep_summary_from_WGS_variants.html ]
+$scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_variants.html ]
 
 
 [PARAMETERS]
