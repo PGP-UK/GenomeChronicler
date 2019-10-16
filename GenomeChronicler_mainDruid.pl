@@ -15,7 +15,7 @@ use File::chdir;
 my $template_withVEP = "templates/reportTemplate_withVEP.tex";
 my $template_ohneVEP = "templates/reportTemplate_ohneVEP.tex";
 my $template = $template_ohneVEP;
-my $dir="/GenomeChroniclerDev/";
+my $dir="/GenomeChronicler/";
 
 
 #Take BAM from input;
@@ -150,7 +150,7 @@ EOP
 sub usage {
     print STDERR <<EOF
 
-\t+++ Welcome to GenomeChronicler - Version 19-288 +++
+\t+++ Welcome to GenomeChronicler - Version 19-289 +++
 
 [USAGE]
 $scriptName -h
@@ -223,8 +223,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP;
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	# 	@#perl makeVEPtables.pl ${BASEDIR}results_${FILENAME2}/${FILENAME2}.vep_summary.html
-	system("perl scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
+	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
 
 }
 
@@ -247,14 +246,14 @@ if(defined($BAM_file)) {
 
 print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-system("perl scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
-system("SAMPLE=$sample ID=$sample R CMD BATCH scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
+system("SAMPLE=$sample ID=$sample R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 ##################### Use the BAM to call the genotypes on the needed positions for this
 
 print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-system("perl scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
+system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
 my $AFOgeno_file = "results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 
@@ -262,8 +261,7 @@ my $AFOgeno_file = "results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 print STDERR "\t +++ INFO: Generating Genome Report Tables\n";
 
-system("perl scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file results/results_${sample}/ 2>>$LOGFILE2");
-# 	@perl make_intersections4report_v9.pl ${GENO} 2>>intersectionDebugAppend.txt
+system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file results/results_${sample}/ 2>>$LOGFILE2");
 
 
 ##################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
@@ -271,16 +269,16 @@ system("perl scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file re
 
 print STDERR "\t +++ INFO: Filtering Report Tables\n";
 
-system("perl scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.good.reportTable.csv");
-system("perl scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.bad.reportTable.csv");
-system("perl scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.genoset.reportTable.csv");
+system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.good.reportTable.csv");
+system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.bad.reportTable.csv");
+system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.genoset.reportTable.csv");
 
 
 ##################### Call script to summarise found phenotypes as XLS spreadsheet
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl scripts/GenomeChronicler_XLSX_fromTables.pl results/results_${sample}/ results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl results/results_${sample}/ results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
@@ -321,48 +319,6 @@ print STDERR "\n\t +++ DONE: Finished GenomeChronicler for file [ $BAM_file ] in
 
 
 
-########################### Old Makefile
-
-
-# BASEDIR="./"
-# ANCESTRY=${BASEDIR}${SAMPLE}_1kGP_pca.pdf
-# VEP=${BASEDIR}HaplotypeCaller_${SAMPLE}_VEP.summary.html
-# GENO=${BASEDIR}${SAMPLE}.afogeno38.txt
-# TEMPLATE=${BASEDIR}reportTemplate_v9.tex 
-
-# DTAG=`date '+%y-%j'`
-
-
-# all:
-# 	@echo "Hi there, welcome to the PGP-UK report generator version 18-214. Today is ${DTAG}.\n\tThe current variables are UKID=${UKID} and PGPID=${PGPID} and ENAID=${ENAID}.\n\tCommands for makefile are \"report\" and \"clean\"\n"
-
-# clean:
-# 	@echo "Performing cleanup of previous runs"
-# 	@rm -rf latest.* SampleName.txt currentAncestryPlot.pdf
-
-# report: clean
-# 	@echo "${SAMPLE}" | tr -d "\n" > SampleName.txt
-# 	@perl makeVEPtables.pl ${VEP}
-# 	@ln -sf ${ANCESTRY} currentAncestryPlot.pdf
-
-# 	@echo "Processing genotypes and intersecting with reference databases"
-# 	@perl make_intersections4report_v9.pl ${GENO} 2>>intersectionDebugAppend.txt
-	
-# 	@echo "Generating report document via LaTeX"     
-
-# 	-@pdflatex -interaction=nonstopmode ${TEMPLATE} .tex 2> /dev/null >/dev/null
-# 	-@pdflatex -interaction=nonstopmode ${TEMPLATE} .tex 2> /dev/null >/dev/null
-# 	-@pdflatex -interaction=nonstopmode ${TEMPLATE} .tex 2> /dev/null >/dev/null
-# 	@mv reportTemplate_v?.pdf report_${PGPID}_${DTAG}.pdf
-# 	@open report_${PGPID}_${DTAG}.pdf
-# 	@cat latest.good.report.csv >> aggregate.good.csv
-# 	@cat latest.bad.report.csv >> aggregate.bad.csv
-# 	@cat latest.genoset.report.csv >> aggregate.genoset.csv
-
-
-
-
-#################################### Subroutines
 
 
 
