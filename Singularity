@@ -53,6 +53,29 @@ cpan DBD::SQLite
 
 
 
+# Installing a couple of tools here from github releases
+
+cd /usr/bin
+wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
+tar -vxjf htslib-1.9.tar.bz2
+cd htslib-1.9
+make
+
+cd /usr/bin
+wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+tar -vxjf samtools-1.9.tar.bz2
+cd samtools-1.9
+make
+
+cd /usr/bin
+wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
+tar -vxjf bcftools-1.9.tar.bz2
+cd bcftools-1.9
+make
+
+cd /
+
+
 # Install required R packages
 R --slave -e 'install.packages("RColorBrewer", dependencies=TRUE, repos = "http://cran.us.r-project.org")'
 R --slave -e 'install.packages("TeachingDemos", dependencies=TRUE, repos = "http://cran.us.r-project.org")'
@@ -65,6 +88,7 @@ apt-get -y install texlive-latex-base texlive-fonts-recommended texlive-latex-ex
 
 
 # Installing extra software
+#apt-get -y install libssl
 apt-get -y install libssl-dev
 apt-get -y install libcurl4-openssl-dev
 apt-get -y install git
@@ -85,6 +109,9 @@ chmod +x genomechronicler
 %environment
 export LC_ALL=C
 export PATH=$PATH:$PWD
+export PATH="$PATH:/usr/bin/bcftools-1.9"
+export PATH="$PATH:/usr/bin/samtools-1.9"
+export PATH="$PATH:/usr/bin/htslib-1.9"
 
 #genomechronicler
 

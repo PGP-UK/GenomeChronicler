@@ -12,9 +12,15 @@ my $inputBED = "${dir}reference/snps.19-114.unique.nochr.bed";
 my $gatk="${dir}software/GenomeAnalysisTK.jar";
 #my $ref_hs37="${dir}/software/human_g1k_v37_decoy.fasta";
 my $ref_hs38="${dir}reference/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa";
-my $bcftools="${dir}software/bcftools";
-my $bgzip="${dir}software/bgzip";
-my $tabix="${dir}software/tabix";
+# my $bcftools="${dir}/software/bcftools";
+# my $samtools="${dir}/software/samtools";
+# my $bgzip="${dir}software/bgzip";
+# my $tabix="${dir}software/tabix";
+my $bcftools="bcftools";
+my $samtools="samtools";
+my $bgzip="bgzip";
+my $tabix="tabix";
+
 
 my $numThreads = 4;
 
