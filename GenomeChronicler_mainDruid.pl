@@ -223,7 +223,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP;
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
+	system("perl ${dir}scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
 
 }
 
@@ -246,14 +246,14 @@ if(defined($BAM_file)) {
 
 print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
-system("SAMPLE=$sample ID=$sample R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
+system("SAMPLE=$sample ID=$sample R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 ##################### Use the BAM to call the genotypes on the needed positions for this
 
 print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
+system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
 my $AFOgeno_file = "results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 
@@ -261,7 +261,7 @@ my $AFOgeno_file = "results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 print STDERR "\t +++ INFO: Generating Genome Report Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file results/results_${sample}/ 2>>$LOGFILE2");
+system("perl ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file results/results_${sample}/ 2>>$LOGFILE2");
 
 
 ##################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
@@ -269,16 +269,16 @@ system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_
 
 print STDERR "\t +++ INFO: Filtering Report Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.good.reportTable.csv");
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.bad.reportTable.csv");
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.genoset.reportTable.csv");
+system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.good.reportTable.csv");
+system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.bad.reportTable.csv");
+system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl results/results_${sample}/latest.genoset.reportTable.csv");
 
 
 ##################### Call script to summarise found phenotypes as XLS spreadsheet
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl results/results_${sample}/ results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("perl ${dir}scripts/GenomeChronicler_XLSX_fromTables.pl results/results_${sample}/ results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
