@@ -25,7 +25,7 @@ $outdir = $ARGV[1] if(defined($ARGV[1]));
 ###print STDERR "ToDo:Backport the extra script back here to handle Lucia\'s new VCF files including RSID.\n\n";
 
 
-my $dir="/GenomeChroniclerDev/";
+my $dir="/GenomeChronicler/";
 
 my $driver   = "SQLite";
 
