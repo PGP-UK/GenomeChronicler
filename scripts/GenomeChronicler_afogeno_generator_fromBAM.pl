@@ -8,10 +8,10 @@ use File::Basename;
 my $dir="/GenomeChronicler/";
 
 
-my $inputBED = "${dir}reference/snps.19-114.unique.nochr.bed";
-my $gatk="${dir}software/GenomeAnalysisTK.jar";
+my $inputBED = "${dir}/reference/snps.19-114.unique.nochr.bed";
+my $gatk="${dir}/software/GenomeAnalysisTK.jar";
 #my $ref_hs37="${dir}/software/human_g1k_v37_decoy.fasta";
-my $ref_hs38="${dir}reference/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa";
+my $ref_hs38="${dir}/reference/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa";
 # my $bcftools="${dir}/software/bcftools";
 # my $samtools="${dir}/software/samtools";
 # my $bgzip="${dir}software/bgzip";
@@ -37,7 +37,7 @@ $sample =~ s/\.recal//g;
 $sample =~ s/\.bam\.clean//gi;
 
 
-system("mkdir -p results/results_${sample}/temp");
+system("mkdir -p ${dir}/results/results_${sample}/temp");
 
 #die "Try to get all iID coordinates from all 23andme chip versions - ok for 37, but can we get it for 38 now?\n";
 
@@ -83,19 +83,19 @@ sub uniq {
 #-  contains only the above snps
 #---------------------------------------
 
-#Might be useful after JAVA : -Xmx40g -Djava.io.tmpdir=results/results_${sample}/temp/tmpdir 
+#Might be useful after JAVA : -Xmx40g -Djava.io.tmpdir=${dir}/results/results_${sample}/temp/tmpdir 
 
 my $runstr="java -jar $gatk";
 $runstr.=" -T HaplotypeCaller -R $ref_hs38";
 $runstr.=" -I $BAM -nct $numThreads";
 $runstr.=" --emitRefConfidence GVCF -L $inputBED";
-$runstr.=" -o results/results_${sample}/temp/${sample}.g.vcf";
+$runstr.=" -o ${dir}/results/results_${sample}/temp/${sample}.g.vcf";
 system($runstr);
 
 my $runstr2.="java -jar $gatk";
 $runstr2.=" -T GenotypeGVCFs -R $ref_hs38";
-$runstr2.=" --variant results/results_${sample}/temp/${sample}.g.vcf";
-$runstr2.=" -allSites -o results/results_${sample}/temp/${sample}.genotypes.vcf";
+$runstr2.=" --variant ${dir}/results/results_${sample}/temp/${sample}.g.vcf";
+$runstr2.=" -allSites -o ${dir}/results/results_${sample}/temp/${sample}.genotypes.vcf";
 $runstr2.=" -stand_emit_conf 10 -stand_call_conf 30";
 system($runstr2);
 
@@ -104,7 +104,7 @@ system($runstr2);
 #- add rsIDs to the vcf file
 #---------------------------------------
 
-system("cat results/results_${sample}/temp/${sample}.genotypes.vcf | $bcftools annotate -a ${inputBED}.gz -c CHROM,-,POS,ID | $bgzip -c > results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz");
+system("cat ${dir}/results/results_${sample}/temp/${sample}.genotypes.vcf | $bcftools annotate -a ${inputBED}.gz -c CHROM,-,POS,ID | $bgzip -c > ${dir}/results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz");
 
 
 ##################### Generate AFO Geno 38 file
@@ -132,11 +132,11 @@ close IN;
 
 #die Dumper(\%genData);
 
-my $VCFfilename  = "results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz";
+my $VCFfilename  = "${dir}/results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz";
 my %debugCounter = %counterTemplate;
 
 open(IN, "gzip -dcf $VCFfilename | grep -v \"0/0:0:0:0:0,0,0\" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq |") or die "Could not open input file: $!\n";
-open(OUT, ">results/results_${sample}/temp/${sample}.afogeno38.txt") or die "Could not open output file: $!\n";
+open(OUT, ">${dir}/results/results_${sample}/temp/${sample}.afogeno38.txt") or die "Could not open output file: $!\n";
 
 while (my $line = <IN>) {
 	chomp($line);
