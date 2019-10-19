@@ -25,11 +25,11 @@ $outdir = $ARGV[1] if(defined($ARGV[1]));
 ###print STDERR "ToDo:Backport the extra script back here to handle Lucia\'s new VCF files including RSID.\n\n";
 
 
-my $dir="/GenomeChroniclerDev/";
+my $dir="/GenomeChronicler/";
 
 my $driver   = "SQLite";
 
-my $database = "${dir}reference/snpedia.db";
+my $database = "${dir}/reference/snpedia.db";
 my $dsn = "DBI:$driver:dbname=$database";
 my $dbh = DBI->connect($dsn, "", "", { RaiseError => 1 }) or die $DBI::errstr;
 print "Opened database successfully [SNPedia]\n";
@@ -49,7 +49,7 @@ my $sth1g = $dbh->prepare( 'select * from genoset where id=?' );
 #my $sth2 = $dbh2->prepare('select * from data where chr=? and coord=?');
 
 
-my $database3 = "${dir}reference/gnomad.db";
+my $database3 = "${dir}/reference/gnomad.db";
 my $dsn3 = "DBI:$driver:dbname=$database3";
 my $dbh3 = DBI->connect($dsn3, "", "", { RaiseError => 1 })
 or die $DBI::errstr;
@@ -57,7 +57,7 @@ print "Opened database successfully [GnomAD]\n";
 my $sth3 = $dbh3->prepare('select * from data where rsid=?');
 
 
-my $database4 = "${dir}reference/getevidence.db";
+my $database4 = "${dir}/reference/getevidence.db";
 my $dsn4 = "DBI:$driver:dbname=$database4";
 my $dbh4 = DBI->connect($dsn4, "", "", { RaiseError => 1 })
 or die $DBI::errstr;
@@ -65,7 +65,7 @@ print "Opened database successfully [GetEvidence]\n";
 my $sth4 = $dbh4->prepare('select * from data where dbsnp_id=?');
 
 
-my $database5 = "${dir}reference/clinvar.db";
+my $database5 = "${dir}/reference/clinvar.db";
 my $dsn5 = "DBI:$driver:dbname=$database5";
 my $dbh5 = DBI->connect($dsn5, "", "", { RaiseError => 1 })
 or die $DBI::errstr;
@@ -78,7 +78,7 @@ my $sth5 = $dbh5->prepare('select * from data where rsid=?');
 
 
 #Note: This is probably useless and never worked 100%, so it is ready to be deleted (just create the array from sorted keys from the hash below).
-open(IN, "${dir}reference/genosetDependencies.txt") or die "Could not open input file: $!\n";
+open(IN, "${dir}/reference/genosetDependencies.txt") or die "Could not open input file: $!\n";
 my @allGenosets;
 while (my $line = <IN>) {
     chomp($line);
@@ -91,7 +91,7 @@ close IN;
 #die Dumper(\@allGenosets);
 
 
-open(IN, "${dir}reference/parsedGenosets.txt") or die "Could not open input file: $!\n";
+open(IN, "${dir}/reference/parsedGenosets.txt") or die "Could not open input file: $!\n";
 my %genosets;
 my %genotypes;
 while (my $line = <IN>) {
@@ -590,64 +590,6 @@ sub buildGenotype {
     
     return \@res,$extra;
 }
-
-
-
-#sub buildGenotype.OLD {
-#    my @alleles = ($_[0],split(",",$_[1]));
-#    my @extras = ("");
-#    my $gen = $_[2];
-#    
-#    
-#    my $l1 = length($alleles[0]);
-#    my $extra = "";
-#    
-#
-#    for (my $i = 1; $i < @alleles; $i++ ) {
-#        
-#        $extras[$i] = "";
-#        
-#        my $l2 = length($alleles[$i]);
-#        if($l1 > 1 or $l2 > 1) {
-#            
-#            ##Debug statement
-#            #print STDERR "There is an indel here [@alleles] [$gen]\n";
-#            
-#            
-#            if($l2 > $l1) {
-#                $alleles[0] = "-";
-#                $alleles[$i] =~ s/^.//s ;
-#                #die "There is an insertion here [@alleles] [$gen]\n";
-#                $extras[$i] = "I";
-#            }
-#            else {
-#                $alleles[0] =~ s/^.//s ;
-#                $alleles[$i] = "-";
-#                #die "Implement deletions here please  [@alleles] [$gen]\n";
-#                $extras[$i] = "D";
-#            }
-#        }
-#    }
-#
-#    
-#    #    die "Genotype debug [$gen]\n" if($gen ne "0/1" and $gen ne "1/1"); #This is to account for odd genotypes. None have been encountered so far but they exist... #Now solved in this version I think
-#    
-#    my @res = map{$alleles[$_]} split('/',$gen);
-#    $extra = join(";",map{$extras[$_]} split('/',$gen));
-#    $extra =~ s/^;//;
-#    $extra =~ s/;$//;
-#    
-#    #print STDERR "@alleles\t$gen\t@res\n";
-#    
-#    
-#    die "Just come back here to buildGenotype and check this case is working as it should\n=====\nINPUT:@_ -- @alleles -- $gen == @res --- $extra\n=====\n" if(length($extra) > 1);
-#    
-#    #print STDERR "\n=====\nINPUT:@_ -- @alleles -- $gen == @res\n=====\n" if($_[2] =~ m/2/);
-#
-#    
-#    return \@res,$extra;
-#}
-#
 
 
 sub cleanSummaryString {
