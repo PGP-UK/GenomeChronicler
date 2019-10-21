@@ -246,8 +246,8 @@ if(defined($BAM_file)) {
 
 print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
-system("SAMPLE=$sample ID=$sample R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
+system("SAMPLE=$sample ID=$sample DIR=$dir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 ##################### Use the BAM to call the genotypes on the needed positions for this
 
