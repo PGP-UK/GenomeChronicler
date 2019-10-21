@@ -223,7 +223,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP;
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
+	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
 
 }
 
