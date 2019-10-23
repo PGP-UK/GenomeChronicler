@@ -223,7 +223,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP;
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file results/results_${sample}/");
+	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${dir}/results/results_${sample}/");
 
 }
 
@@ -278,7 +278,7 @@ system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${d
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl results/results_${sample}/ ${dir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl ${dir}/results/results_${sample}/ ${dir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
