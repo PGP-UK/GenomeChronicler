@@ -2,12 +2,12 @@ Bootstrap: docker
 From: ubuntu:bionic
 
 %runscript
-echo "Starting the GenomeChronicler container.."
+echo "Starting the GenomeChronicler container [19-296]..."
 
-#cd /GenomeChroniclerDev
+#cd /GenomeChronicler
 
 echo "Running GenomeChronicler itself"
-perl /GenomeChroniclerDev/genomechronicler
+perl /GenomeChronicler/genomechronicler
 
 %post
 
@@ -93,11 +93,11 @@ apt-get -y install git
 
 
 # Getting GenomeChronicler Repo
-git clone https://github.com/afonsoguerra/GenomeChroniclerDev.git
+git clone https://github.com/PGP-UK/GenomeChronicler.git
 
 
 # Running GenomeChronicler Setup
-cd GenomeChroniclerDev
+cd /GenomeChronicler
 bash SetupMeFirst.sh
 ln -sf GenomeChronicler_mainDruid.pl genomechronicler
 chmod +x GenomeChronicler_mainDruid.pl
@@ -110,6 +110,8 @@ export PATH=$PATH:$PWD
 export PATH="$PATH:/usr/bin/bcftools-1.9"
 export PATH="$PATH:/usr/bin/samtools-1.9"
 export PATH="$PATH:/usr/bin/htslib-1.9"
+export PATH="$PATH:/GenomeChronicler"
+
 
 #genomechronicler
 
