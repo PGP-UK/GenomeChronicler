@@ -13,6 +13,7 @@ use File::chdir;
 ################### parameters
 
 my $dir="/GenomeChronicler/";
+my $resultsdir=`pwd`;
 my $template_withVEP = "${dir}/templates/reportTemplate_withVEP.tex";
 my $template_ohneVEP = "${dir}/templates/reportTemplate_ohneVEP.tex";
 my $template = $template_ohneVEP;
@@ -45,7 +46,8 @@ GetOptions(
 #	'configFile=s' => \$conf_file,
 	'bamFile|bam=s' => \$BAM_file,
 	'vepFile|vep|html=s' => \$VEP_file,
-
+	'customTemplate|template|latex=s' => \$template,
+	'resultsDir|outputDir=s' => \$resultsdir,
 );
 
 
@@ -81,21 +83,19 @@ if(defined($VEP_file) and (!-e ($VEP_file))) {
 	exit(606);
 }
 
-#wishlist: For V2, make sure the needed software is also in place and callable from the script
-
-#(my $sample= basename($BAM_file)) =~ s/\.[^.]+$//;
-#$sample =~ s/\.recal//g;
-#system("mkdir -p results/results_${sample}/temp");
-
-
 (my $sample= basename($BAM_file)) =~ s/\.[^.]+$//;
 $sample =~ s/\.recal//g;
 $sample =~ s/\.bam\.clean//gi;
 
-system("mkdir -p ${dir}/results/results_${sample}/temp");
+system("mkdir -p ${resultsdir}/results/results_${sample}/temp");
 
-#my $LOGFILE1 = "${dir}/results/results_${sample}/${sample}.processingLog.stdout.txt";
-my $LOGFILE2 = "${dir}/results/results_${sample}/${sample}.processingLog.stderr.txt";
+if(! -e ($resultsdir)) {
+	&headerascii();
+	print STDERR "\t --- ERROR: Results directory [$resultsdir] can't be found and could not be created. Please check permissions and try again ---\n";
+	exit(102);
+}
+
+my $LOGFILE2 = "${resultsdir}/results/results_${sample}/${sample}.processingLog.stderr.txt";
 
 # Dump parameters
 if ( $debugFlag ) {
@@ -106,7 +106,7 @@ if ( $debugFlag ) {
     print STDERR "VEP = $VEP_file\n\n";
 
     print STDERR "SAMPLE = $sample\n";
-    print STDERR "OUTDIR = ${dir}/results/results_${sample}/temp\n";
+    print STDERR "OUTDIR = ${resultsdir}/results/results_${sample}/temp\n";
   #  print STDERR "LOGFILE1 = $LOGFILE1\n";
     print STDERR "LOGFILE2 = $LOGFILE2\n\n";
 
@@ -158,20 +158,28 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 
 
 [PARAMETERS]
-	--bamFile=		[REQUIRED] The path to a BAM file that has been preprocessed through 
+	--bamFile=			[REQUIRED] The path to a BAM file that has been preprocessed through 
 						markDuplicates and VariantQualityScoreRecalibration. This can be
 						obtained by running the first step of the Sarek nextflow pipeline,
 						or through other means that do respect the general principles of
 						the GATK Variation Calling Best Practices workflow. Note that no
 						variation calling is needed to run GenomeChronicler.
 
-	--vepFile=		[OPTIONAL] For the summary tables to appear in the report, a VEP 
+	--vepFile=			[OPTIONAL] For the summary tables to appear in the report, a VEP 
 						summary HTML file must be provided. This will likely be generated
 						if the data is from whole genome sequencing and variants were called
 						(e.g. by running all the germline calling steps of the Sarek nextflow
 						pipeline or other GATK Best Practices based workflow). If this isn't
 						provided, summary tables and plots will automatically be excluded from
 						the final report.
+
+	--resultsDire=		[OPTIONAL] For setting the absolute path of the results folder to be 
+						produced when running GenomeChronicler.
+
+	--customTemplate=	[OPTIONAL] For customising the output report, set this variable to the
+						path of a custom LaTeX file to act as a template for the report. The 
+						default templates bundled with this software can also be found in the 
+						project github page.
 
 	-h, --help		Prints this help page    
   
@@ -210,7 +218,7 @@ my $cleanSample = $sample;
 $cleanSample =~ s/\_/\\_/gi;
 
 # 	@echo "${SAMPLE}" | tr -d "\n" > SampleName.txt
-open(OUT, ">${dir}/results/results_${sample}/SampleName.txt") or die "Could not open input file: $!\n";
+open(OUT, ">${resultsdir}/results/results_${sample}/SampleName.txt") or die "Could not open input file: $!\n";
 print OUT "$cleanSample";
 close OUT;
 
@@ -223,7 +231,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP;
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${dir}/results/results_${sample}/");
+	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
 
 }
 
@@ -254,14 +262,14 @@ system("SAMPLE=$sample ID=$sample DIR=$dir R CMD BATCH ${dir}/scripts/GenomeChro
 print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
 system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
-my $AFOgeno_file = "${dir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
+my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 
 ##################### Use the generated genotypes file to produce the report tables by linking with the databases
 
 print STDERR "\t +++ INFO: Generating Genome Report Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${dir}/results/results_${sample}/ 2>>$LOGFILE2");
+system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
 
 
 ##################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
@@ -269,32 +277,32 @@ system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_
 
 print STDERR "\t +++ INFO: Filtering Report Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${dir}/results/results_${sample}/latest.good.reportTable.csv");
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${dir}/results/results_${sample}/latest.bad.reportTable.csv");
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${dir}/results/results_${sample}/latest.genoset.reportTable.csv");
+system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
+system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
+system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.genoset.reportTable.csv");
 
 
 ##################### Call script to summarise found phenotypes as XLS spreadsheet
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl ${dir}/results/results_${sample}/ ${dir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
 
 print STDERR "\t +++ INFO: Compiling Genome Report\n";
 
-system("cp $template ${dir}/results/results_${sample}/${sample}_report_${dtag}.tex");
-system("cp ${dir}/templates/versionTable.txt ${dir}/results/results_${sample}/");
-system("cp ${dir}/templates/GeneStructure.pdf ${dir}/results/results_${sample}/");
+system("cp $template ${resultsdir}/results/results_${sample}/${sample}_report_${dtag}.tex");
+system("cp ${dir}/templates/versionTable.txt ${resultsdir}/results/results_${sample}/");
+system("cp ${dir}/templates/GeneStructure.pdf ${resultsdir}/results/results_${sample}/");
 
 my $TEMPLATETEX = "${sample}_report_".$dtag;
 
 &runLatex();
 
 sub runLatex {
-    local $CWD = "${dir}/results/results_${sample}";
+    local $CWD = "${resultsdir}/results/results_${sample}";
 
 	for(my $i = 0; $i < 3 ; $i++) {
 		system("pdflatex -interaction=nonstopmode ${TEMPLATETEX} .tex 2> /dev/null >/dev/null");
@@ -306,10 +314,10 @@ sub runLatex {
 print STDERR "\t +++ INFO: Cleaning up Temporary and Intermediate Files\n";
 
 system("rm -rf $BAM_file ${BAM_file}.bai");
-system("rm -rf ${dir}/results/results_${sample}/temp/");
-system("rm -rf ${dir}/results/results_${sample}/latest*.csv");
-system("rm -rf ${dir}/results/results_${sample}/versionTable.txt ${dir}/results/results_${sample}/GeneStructure.pdf");
-system("rm -rf ${dir}/results/results_${sample}/${TEMPLATETEX}.out ${dir}/results/results_${sample}/texput.log ${dir}/results/results_${sample}/${TEMPLATETEX}.aux ${dir}/results/results_${sample}/${TEMPLATETEX}.log ${dir}/results/results_${sample}/${TEMPLATETEX}.tex");
+system("rm -rf ${resultsdir}/results/results_${sample}/temp/");
+system("rm -rf ${resultsdir}/results/results_${sample}/latest*.csv");
+system("rm -rf ${resultsdir}/results/results_${sample}/versionTable.txt ${resultsdir}/results/results_${sample}/GeneStructure.pdf");
+system("rm -rf ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.out ${resultsdir}/results/results_${sample}/texput.log ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.aux ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.log ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.tex");
 system("rm -rf ${dir}/GenomeChronicler_plot_generator_fromAncestry.Rout");
 
 sleep (1);
