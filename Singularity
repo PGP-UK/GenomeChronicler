@@ -50,7 +50,6 @@ cpan DBI
 cpan DBD::SQLite
 
 
-
 # Installing a couple of tools here from github releases
 
 cd /usr/bin

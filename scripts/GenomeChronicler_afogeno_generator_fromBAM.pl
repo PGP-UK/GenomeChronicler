@@ -6,7 +6,7 @@ use File::Basename;
 
 
 my $dir="/GenomeChronicler/";
-
+my $resultsdir = $dir;
 
 my $inputBED = "${dir}/reference/snps.19-114.unique.nochr.bed";
 my $gatk="${dir}/software/GenomeAnalysisTK.jar";
@@ -28,7 +28,7 @@ my $numThreads = 4;
 #Needs tabix and bgzip here in the tools too; 
 
 if(!@ARGV) {
-	die "Please provide a single base recalibrated BAM file to this script\n";
+	die "Please provide a single base recalibrated BAM file to this script and optional output directory\n";
 }
 
 my $BAM=$ARGV[0];
@@ -36,8 +36,9 @@ my $BAM=$ARGV[0];
 $sample =~ s/\.recal//g;
 $sample =~ s/\.bam\.clean//gi;
 
+$resultsdir = $ARGV[1] if(defined($ARGV[1]));
 
-system("mkdir -p ${dir}/results/results_${sample}/temp");
+system("mkdir -p ${resultsdir}/results/results_${sample}/temp");
 
 #die "Try to get all iID coordinates from all 23andme chip versions - ok for 37, but can we get it for 38 now?\n";
 
@@ -83,19 +84,19 @@ sub uniq {
 #-  contains only the above snps
 #---------------------------------------
 
-#Might be useful after JAVA : -Xmx40g -Djava.io.tmpdir=${dir}/results/results_${sample}/temp/tmpdir 
+#Might be useful after JAVA : -Xmx40g -Djava.io.tmpdir=${resultsdir}/results/results_${sample}/temp/tmpdir 
 
 my $runstr="java -jar $gatk";
 $runstr.=" -T HaplotypeCaller -R $ref_hs38";
 $runstr.=" -I $BAM -nct $numThreads";
 $runstr.=" --emitRefConfidence GVCF -L $inputBED";
-$runstr.=" -o ${dir}/results/results_${sample}/temp/${sample}.g.vcf";
+$runstr.=" -o ${resultsdir}/results/results_${sample}/temp/${sample}.g.vcf";
 system($runstr);
 
 my $runstr2.="java -jar $gatk";
 $runstr2.=" -T GenotypeGVCFs -R $ref_hs38";
-$runstr2.=" --variant ${dir}/results/results_${sample}/temp/${sample}.g.vcf";
-$runstr2.=" -allSites -o ${dir}/results/results_${sample}/temp/${sample}.genotypes.vcf";
+$runstr2.=" --variant ${resultsdir}/results/results_${sample}/temp/${sample}.g.vcf";
+$runstr2.=" -allSites -o ${resultsdir}/results/results_${sample}/temp/${sample}.genotypes.vcf";
 $runstr2.=" -stand_emit_conf 10 -stand_call_conf 30";
 system($runstr2);
 
@@ -104,7 +105,7 @@ system($runstr2);
 #- add rsIDs to the vcf file
 #---------------------------------------
 
-system("cat ${dir}/results/results_${sample}/temp/${sample}.genotypes.vcf | $bcftools annotate -a ${inputBED}.gz -c CHROM,-,POS,ID | $bgzip -c > ${dir}/results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz");
+system("cat ${resultsdir}/results/results_${sample}/temp/${sample}.genotypes.vcf | $bcftools annotate -a ${inputBED}.gz -c CHROM,-,POS,ID | $bgzip -c > ${resultsdir}/results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz");
 
 
 ##################### Generate AFO Geno 38 file
@@ -132,11 +133,11 @@ close IN;
 
 #die Dumper(\%genData);
 
-my $VCFfilename  = "${dir}/results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz";
+my $VCFfilename  = "${resultsdir}/results/results_${sample}/temp/${sample}.genotypes.rsIDs.vcf.gz";
 my %debugCounter = %counterTemplate;
 
 open(IN, "gzip -dcf $VCFfilename | grep -v \"0/0:0:0:0:0,0,0\" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq |") or die "Could not open input file: $!\n";
-open(OUT, ">${dir}/results/results_${sample}/temp/${sample}.afogeno38.txt") or die "Could not open output file: $!\n";
+open(OUT, ">${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt") or die "Could not open output file: $!\n";
 
 while (my $line = <IN>) {
 	chomp($line);

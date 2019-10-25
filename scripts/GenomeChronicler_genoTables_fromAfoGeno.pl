@@ -22,8 +22,6 @@ my $filename = $ARGV[0];
 my $outdir = "./";
 $outdir = $ARGV[1] if(defined($ARGV[1]));
 
-###print STDERR "ToDo:Backport the extra script back here to handle Lucia\'s new VCF files including RSID.\n\n";
-
 
 my $dir="/GenomeChronicler/";
 
@@ -33,21 +31,11 @@ my $database = "${dir}/reference/snpedia.db";
 my $dsn = "DBI:$driver:dbname=$database";
 my $dbh = DBI->connect($dsn, "", "", { RaiseError => 1 }) or die $DBI::errstr;
 print "Opened database successfully [SNPedia]\n";
-#my $stmt = qq(select * from data where id=\"?\");
-#my $sth = $dbh->prepare( $stmt );
-#my $sth1a = $dbh->prepare( 'select * from data join strand where data.id=? and strand.id=data.id' );
+
 my $sth1c = $dbh->prepare( 'select * from data where data.id=?' );
 my $sth1f = $dbh->prepare( 'select * from flagged where id=?' );
 my $sth1s = $dbh->prepare( 'select * from strand where id=?' );
 my $sth1g = $dbh->prepare( 'select * from genoset where id=?' );
-
-#my $database2 = "results_${sampleFR}/${sampleFR}.db";
-#my $dsn2 = "DBI:$driver:dbname=$database2";
-#my $dbh2 = DBI->connect($dsn2, "", "", { RaiseError => 1 })
-#or die $DBI::errstr;
-#print "Opened database successfully [VolunteerVCF]\n";
-#my $sth2 = $dbh2->prepare('select * from data where chr=? and coord=?');
-
 
 my $database3 = "${dir}/reference/gnomad.db";
 my $dsn3 = "DBI:$driver:dbname=$database3";
@@ -131,27 +119,12 @@ while (my $line = <IN>) {
         
         
     my $debugBuffer = "";
-	
-    #OLD WAS: 1_54713_-/TTTC 1:54712-54713 TTTC ENSG00000268020 ENST00000606857 Transcript downstream_gene_variant - - - - - rs568927205 IMPACT=MODIFIER;DISTANCE=1400;STRAND=1;SYMBOL=OR4G4P;SYMBOL_SOURCE=HGNC;HGNC_ID=14822;BIOTYPE=unprocessed_pseudogene;CANONICAL=YES;AFR_MAF=TTTC:0.5083;AMR_MAF=TTTC:0.5677;EAS_MAF=TTTC:0.6776;EUR_MAF=TTTC:0.6193;SAS_MAF=TTTC:0.544
-
-    #NEW IS: 7 92383887 92383888 rs10 7 92383888 A C 1/1 C C
-
-    
-    #Even newer... (NOTE: Need to adapt to this).
-    #MT	16519	rs3937033	T	C	103537	.	AC=2;AF=1;AN=2;BaseQRankSum=-0.543;ClippingRankSum=0.19;DP=3147;FS=0;MLEAC=2;MLEAF=1;MQ=59.94;MQRankSum=-0.622;QD=33.24;ReadPosRankSum=-0.088;SOR=0.728	GT:AD:DP:GQ:PL	1/1:5,3110:3118:99:103565,9151,0
-    
+	    
     my @data = split("\t", $line);
     $data[11] = "" if(!defined($data[11]));
     
     $debugBuffer .= "\n+++\n@data\n";
-    
-    #die "@data\n";
-    
-    
-    #This is not needed
-    #my $chr = $data[0];
-    #my $coord = $data[5];
-    
+        
     my $strand = "plus";
 
     my $snp = $data[3];
@@ -167,8 +140,6 @@ while (my $line = <IN>) {
     die "Oh my Gawd!!! DNA has two strands (and it isn't a good thing in this case)" if($counter > 1);
     
     
-    
-    
     my $rvFlag = $sth1f->execute($snp) or die $DBI::errstr;
     die $DBI::errstr if($rvFlag < 0);
     my $flagID = 0;
@@ -178,8 +149,7 @@ while (my $line = <IN>) {
     }
     
     #die "Found my candidate SNP" if($snp eq "rs141935559");
-
-    
+ 
     #die "Do something here about the flag if it is raised and genotype = 0/0, probably just next it... = [geno] $data[8] = [extra] $data[11]";
     
     if(($flagID == 1) and (($data[8] eq "0/0") or ($data[8] eq "./."))) {
@@ -217,24 +187,15 @@ while (my $line = <IN>) {
         $debugBuffer .= "SUMMARY =  ". $row[5] ."\n";
         $debugBuffer .= "RSID =  ". $row[6] ."\n";
         $debugBuffer .= "IID =  ". $row[7] ."\n";
-        #$debugBuffer .= "ID2 =  ". $row[8] ."\n";
-        #$debugBuffer .= "STRAND =  ". $row[9] ."\n";
-
-        
+          
         #die "DEBUUUG_cycle: $line\n $debugBuffer\n" if($line =~ m/rs3928306/);
 
-        #$strand = $row[9];
-        
         #Doing a full summary string cleanup (now in a neat subroutine to be re-used in genosets).
         $row[5] = cleanSummaryString($row[5]);
         
         my $a1 = $row[3];
         my $a2 = $row[4];
-        
-        #I'm swapping the genotypes now, and not the alleles here.
-        #$a1 =~ tr/ACTGactg/TGACtgac/ if(lc($strand) eq "minus");
-        #$a2 =~ tr/ACTGactg/TGACtgac/ if(lc($strand) eq "minus");
-        
+                
         next if(!defined($row[2]) or ($row[2] eq 0)); #Excluding magnitude 0
      
         $alleles{$a1}{$a2} = [$row[1],$row[0],$row[2],"($row[3];$row[4])",$row[5]];
@@ -292,8 +253,6 @@ while (my $line = <IN>) {
                 next if($alleles{$genotype->[0]}{$genotype->[1]}->[4] =~ m/Classified as benign in ClinVar/i);
 
 
-                               
-                
                 my $rsid = $alleles{$genotype->[0]}{$genotype->[1]}->[1];
                 my $GnomAD = generate_GnomAD_url($rsid);
                 my $getevidence = generate_GetEvidence_url($rsid);
@@ -360,21 +319,11 @@ close BAD;
 
 
 
-##Hacking gs269...
-#$genotypes{"rs7412"}{"C;T"}=1;
-#$genotypes{"rs429358"}{"T;T"}=1;
-#die Dumper(\%genotypes);
-#die Dumper($genotypes{"rs3928306"});
-
-
-
 ############################### Having a go at processing the genosets...
 
 my %positiveGenosets;
 for my $genoset (@allGenosets) {
     
-    #next if($genoset ne "gs269");
-    #next if($genoset ne "gs237");
     my $result = processGenoset($genoset);
     
 }
@@ -409,18 +358,8 @@ for my $geno (sort(keys(%positiveGenosets))) {
 close GENO;
 
 
-
-#system("ln -sf ${filename}.genoset.reportTable.csv latest.genoset.report.csv");
-#system("ln -sf ${filename}.good.reportTable.csv latest.good.report.csv");
-#system("ln -sf ${filename}.bad.reportTable.csv latest.bad.report.csv");
-
-
 print "Operation done successfully\n";
 $dbh->disconnect();
-
-
-
-
 
 
 
@@ -535,61 +474,6 @@ sub evaluateGenotype {
 
 
 
-
-
-#This was updated on 17 of June 2016 in preparation for the input format change. At the moment this function is not called at all.
-sub buildGenotype {
-    my @alleles = ($_[0],split(",",$_[1]));
-    my @extras = ("");
-    my $gen = $_[2];
-    
-    
-    my $l1 = length($alleles[0]);
-    my $extra = "";
-    
-    
-    for (my $i = 1; $i < @alleles; $i++ ) {
-        
-        $extras[$i] = "";
-        
-        my $l2 = length($alleles[$i]);
-        if($l1 > 1 or $l2 > 1) {
-            
-            ##Debug statement
-            #print STDERR "There is an indel here [@alleles] [$gen]\n";
-            
-            
-            if($l2 > $l1) {
-                $alleles[0] = "-";
-                $alleles[$i] =~ s/^.//s ;
-                #die "There is an insertion here [@alleles] [$gen]\n";
-                $extras[$i] = "I";
-            }
-            else {
-                $alleles[0] =~ s/^.//s ;
-                $alleles[$i] = "-";
-                #die "Implement deletions here please  [@alleles] [$gen]\n";
-                $extras[$i] = "D";
-            }
-        }
-    }
-    
-    
-    #    die "Genotype debug [$gen]\n" if($gen ne "0/1" and $gen ne "1/1"); #This is to account for odd genotypes. None have been encountered so far but they exist... #Now solved in this version I think
-    
-    my @res = map{$alleles[$_]} split('/',$gen);
-    $extra = join(";",map{$extras[$_]} split('/',$gen));
-    $extra =~ s/^;//;
-    $extra =~ s/;$//;
-    
-    #print STDERR "@alleles\t$gen\t@res\n";
-    
-    #die "Just come back here to buildGenotype and check this case is working as it should\n=====\nINPUT:@_ -- @alleles -- $gen == @res --- $extra\n=====\n" if(length($extra) > 1);
-    
-    print STDERR "\n=====\nINPUT:@_ -- @alleles -- $gen == @res\n=====\n" if($_[2] =~ m/2/);
-    
-    return \@res,$extra;
-}
 
 
 sub cleanSummaryString {

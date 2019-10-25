@@ -105,8 +105,10 @@ if ( $debugFlag ) {
     print STDERR "BAM = $BAM_file\n";
     print STDERR "VEP = $VEP_file\n\n";
 
+    print STDERR "TEMPLATE = $template\n";
     print STDERR "SAMPLE = $sample\n";
-    print STDERR "OUTDIR = ${resultsdir}/results/results_${sample}/temp\n";
+    print STDERR "DIR = ${dir}\n";
+    print STDERR "TMPDIR = ${resultsdir}/results/results_${sample}/temp\n";
   #  print STDERR "LOGFILE1 = $LOGFILE1\n";
     print STDERR "LOGFILE2 = $LOGFILE2\n\n";
 
@@ -158,14 +160,14 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 
 
 [PARAMETERS]
-	--bamFile=			[REQUIRED] The path to a BAM file that has been preprocessed through 
+	--bamFile=		[REQUIRED] The path to a BAM file that has been preprocessed through 
 						markDuplicates and VariantQualityScoreRecalibration. This can be
 						obtained by running the first step of the Sarek nextflow pipeline,
 						or through other means that do respect the general principles of
 						the GATK Variation Calling Best Practices workflow. Note that no
 						variation calling is needed to run GenomeChronicler.
 
-	--vepFile=			[OPTIONAL] For the summary tables to appear in the report, a VEP 
+	--vepFile=		[OPTIONAL] For the summary tables to appear in the report, a VEP 
 						summary HTML file must be provided. This will likely be generated
 						if the data is from whole genome sequencing and variants were called
 						(e.g. by running all the germline calling steps of the Sarek nextflow
@@ -181,7 +183,10 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 						default templates bundled with this software can also be found in the 
 						project github page.
 
-	-h, --help		Prints this help page    
+	-d, --debug		Prints the relevant variables that are in place after parameter parsing.
+
+	-h, --help		Prints this help page.
+  
   
 EOF
 ;
@@ -254,14 +259,14 @@ if(defined($BAM_file)) {
 
 print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
-system("SAMPLE=$sample ID=$sample DIR=$dir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir 2>>$LOGFILE2");
+system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 ##################### Use the BAM to call the genotypes on the needed positions for this
 
 print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file 2>>$LOGFILE2");
+system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir 2>>$LOGFILE2");
 my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 
