@@ -153,7 +153,7 @@ EOP
 sub usage {
     print STDERR <<EOF
 
-\t+++ Welcome to GenomeChronicler - Version 19-291 +++
+\t+++ Welcome to GenomeChronicler - Version 19-299 +++
 
 [USAGE]
 $scriptName -h
@@ -176,7 +176,7 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 						provided, summary tables and plots will automatically be excluded from
 						the final report.
 
-	--resultsDire=		[OPTIONAL] For setting the absolute path of the results folder to be 
+	--resultsDir=		[OPTIONAL] For setting the absolute path of the results folder to be 
 						produced when running GenomeChronicler.
 
 	--customTemplate=	[OPTIONAL] For customising the output report, set this variable to the
