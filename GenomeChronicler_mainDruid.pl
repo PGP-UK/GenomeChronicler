@@ -14,6 +14,7 @@ use File::chdir;
 
 my $dir="/GenomeChronicler/";
 my $resultsdir=`pwd`;
+chomp($resultsdir);
 my $template_withVEP = "${dir}/templates/reportTemplate_withVEP.tex";
 my $template_ohneVEP = "${dir}/templates/reportTemplate_ohneVEP.tex";
 my $template = $template_ohneVEP;
@@ -187,7 +188,7 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 
 	-h, --help		Prints this help page.
   
-  
+
 EOF
 ;
 }
