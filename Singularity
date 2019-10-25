@@ -28,7 +28,7 @@ apt-get -y install openjdk-8-jdk
 echo debconf shared/accepted-oracle-license-v1-2 select true | debconf-set-selections
 echo debconf shared/accepted-oracle-license-v1-2 seen true | debconf-set-selections
 
-apt-get -y --force-yes install oracle-java13-installer oracle-java13-set-default
+apt-get -y --force-yes install oracle-java11-installer oracle-java11-set-default
 
 #apt-get -y update
 apt-get -y install r-base-core
