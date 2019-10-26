@@ -18,7 +18,7 @@ chomp($resultsdir);
 my $template_withVEP = "${dir}/templates/reportTemplate_withVEP.tex";
 my $template_ohneVEP = "${dir}/templates/reportTemplate_ohneVEP.tex";
 my $template = $template_ohneVEP;
-
+my $GATKthreads = 1;
 
 #Take BAM from input;
 #Take VEP html from input if exists; (if doesn't exist disable VEP processing and choose the appropriate LaTeX template)
@@ -49,6 +49,7 @@ GetOptions(
 	'vepFile|vep|html=s' => \$VEP_file,
 	'customTemplate|template|latex=s' => \$template,
 	'resultsDir|outputDir=s' => \$resultsdir,
+	'threads|GATKthreads|t=i' => \$GATKthreads,
 );
 
 
@@ -105,6 +106,7 @@ if ( $debugFlag ) {
     print STDERR "HELP = $helpFlag\n";
     print STDERR "BAM = $BAM_file\n";
     print STDERR "VEP = $VEP_file\n\n";
+    print STDERR "GATKthreads = $GATKthreads\n\n";
 
     print STDERR "TEMPLATE = $template\n";
     print STDERR "SAMPLE = $sample\n";
@@ -184,6 +186,9 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 						default templates bundled with this software can also be found in the 
 						project github page.
 
+	--GATKthreads=	[OPTIONAL] Number of threads to use for the GATK genotyping steps of this
+						processing pipeline.
+
 	-d, --debug		Prints the relevant variables that are in place after parameter parsing.
 
 	-h, --help		Prints this help page.
@@ -260,14 +265,14 @@ if(defined($BAM_file)) {
 
 print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir 2>>$LOGFILE2");
+system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 ##################### Use the BAM to call the genotypes on the needed positions for this
 
 print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir 2>>$LOGFILE2");
+system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 

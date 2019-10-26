@@ -38,6 +38,8 @@ $sample =~ s/\.bam\.clean//gi;
 
 $resultsdir = $ARGV[1] if(defined($ARGV[1]));
 
+$numThreads = $ARGV[2] if(defined($ARGV[2]));
+
 system("mkdir -p ${resultsdir}/results/results_${sample}/temp");
 
 #die "Try to get all iID coordinates from all 23andme chip versions - ok for 37, but can we get it for 38 now?\n";

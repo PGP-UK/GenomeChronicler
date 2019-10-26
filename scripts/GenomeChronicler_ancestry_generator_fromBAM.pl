@@ -45,6 +45,8 @@ $sample =~ s/\.bam\.clean//gi;
 
 $resultsdir = $ARGV[1] if(defined($ARGV[1]));
 
+$numThreads = $ARGV[2] if(defined($ARGV[2]));
+
 system("mkdir -p ${resultsdir}/results/results_${sample}/temp");
 
 #Also check for the need to samtools index this stuff
