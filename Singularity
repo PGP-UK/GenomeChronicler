@@ -4,8 +4,6 @@ From: ubuntu:bionic
 %runscript
 echo "Starting the GenomeChronicler container [19-296]..."
 
-#cd /GenomeChronicler
-
 echo "Running GenomeChronicler itself"
 perl /GenomeChronicler/genomechronicler
 
@@ -25,7 +23,7 @@ apt-get -y update
 
 apt-get -y install openjdk-8-jdk
 
-###Disabling oracle java for now... hoping openjdk is ok for GATK
+###Disabling oracle java for now... hoping openjdk is ok for GATK (which only supports java 8)
 #echo debconf shared/accepted-oracle-license-v1-2 select true | debconf-set-selections
 #echo debconf shared/accepted-oracle-license-v1-2 seen true | debconf-set-selections
 #apt-get -y --force-yes install oracle-java11-installer oracle-java11-set-default
@@ -80,7 +78,6 @@ R --slave -e 'install.packages("TeachingDemos", dependencies=TRUE, repos = "http
 
 
 # Installing LaTeX stuff
-#apt-get -y --no-install-recommends install texlive-latex-base texlive-fonts-recommended texlive-latex-extra lmodern
 apt-get -y install texlive-latex-base texlive-fonts-recommended texlive-latex-extra lmodern
 
 
@@ -98,9 +95,12 @@ git clone https://github.com/PGP-UK/GenomeChronicler.git
 # Running GenomeChronicler Setup
 cd /GenomeChronicler
 bash SetupMeFirst.sh
-ln -sf GenomeChronicler_mainDruid.pl genomechronicler
+
 chmod +x GenomeChronicler_mainDruid.pl
-chmod +x genomechronicler
+
+
+%apprun genomechronicler
+    perl /GenomeChronicler/GenomeChronicler_mainDruid.pl "$@"
 
 
 %environment
