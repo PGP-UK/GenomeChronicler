@@ -19,16 +19,11 @@ my $dir="/GenomeChronicler/";
 #- Also needs tabix and R in the PATH
 
 my $plink="${dir}/software/plink";
-#my $admix="${dir}/software/admixture";
 my $gatk="${dir}/software/GenomeAnalysisTK.jar";
-#my $ref_hs37="${dir}/software/human_g1k_v37_decoy.fasta";
 my $ref_hs38="${dir}/reference/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa";
 my $initialBIM="${dir}/reference/1kGP_GRCh38_exome.bim";
 my $initialAnc="${dir}/reference/1kGP_GRCh38_exome";
-# my $bcftools="${dir}/software/bcftools";
-# my $samtools="${dir}/software/samtools";
-# my $bgzip="${dir}software/bgzip";
-# my $tabix="${dir}software/tabix";
+
 my $bcftools="bcftools";
 my $samtools="samtools";
 my $bgzip="bgzip";
@@ -141,7 +136,7 @@ sub _get_list_of_snps_from_1kGP {
 	#---------------------------------------
 
 
-	open(INF, "${dir}/${initialBIM}");
+	open(INF, "${initialBIM}");
 	open(OUTF, ">${dir}/results/results_${sample}/temp/1kGP_GRCh38_nonAT_CG.bed");
 	print OUTF "#CHROM\tST0\tPOS\tID\n";
 	while(<INF>){
@@ -244,7 +239,7 @@ sub _merge_pgp_1kGP {
 	
 	my $runstr3="$plink";
 	$runstr3.=" --bfile ${dir}/results/results_${sample}/temp/${sample}";
-	$runstr3.=" --bmerge ${dir}/${initialAnc}";
+	$runstr3.=" --bmerge ${initialAnc}";
 	$runstr3.=" --out ${dir}/results/results_${sample}/temp/${sample}_1kGP_0";
 	$runstr3.=" --geno 0 --allow-extra-chr";
 	$runstr3.=" --make-bed";
@@ -253,7 +248,7 @@ sub _merge_pgp_1kGP {
 	#- remove the discarded SNPs from the pgp and 1kGP file
 	
 	my $runstr1z="$plink";
-	$runstr1z.=" --bfile ${dir}${initialAnc}";
+	$runstr1z.=" --bfile ${initialAnc}";
 	$runstr1z.=" --exclude ${dir}/results/results_${sample}/temp/${sample}_1kGP_0-merge.missnp";
 	$runstr1z.=" --out ${dir}/results/results_${sample}/temp/1kGP_2";
 	$runstr1z.=" --make-bed --allow-extra-chr";
