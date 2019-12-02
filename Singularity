@@ -102,6 +102,8 @@ chmod +x GenomeChronicler_mainDruid.pl
 %apprun genomechronicler
     perl /GenomeChronicler/GenomeChronicler_mainDruid.pl "$@"
 
+%apprun gc
+    perl /GenomeChronicler/GenomeChronicler_mainDruid.pl "$@"
 
 %environment
 export LC_ALL=C
