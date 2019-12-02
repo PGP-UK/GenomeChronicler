@@ -36,7 +36,7 @@ my $BAM_file = undef;
 my $VEP_file = undef;
 
 
-my ($helpFlag, $debugFlag);
+my ($helpFlag, $debugFlag, $templateParam);
 
 
 GetOptions(
@@ -47,12 +47,14 @@ GetOptions(
 #	'configFile=s' => \$conf_file,
 	'bamFile|bam=s' => \$BAM_file,
 	'vepFile|vep|html=s' => \$VEP_file,
-	'customTemplate|template|latex=s' => \$template,
+	'customTemplate|template|latex=s' => \$templateParam,
 	'resultsDir|outputDir=s' => \$resultsdir,
 	'threads|GATKthreads|t=i' => \$GATKthreads,
 );
 
-
+if(defined($templateParam)) {
+	$template = $templateParam;
+}
 
 # Get the script filename for use in usage messages
 my $scriptName = basename( $0, () );
@@ -83,6 +85,12 @@ if(defined($VEP_file) and (!-e ($VEP_file))) {
 	&headerascii();
 	print STDERR "\t --- ERROR: The VEP file specified in the command line wasn't found [ $VEP_file ], please check the provided path and try again. If you don't want to run the report with VEP, just omit this parameter ---\n";
 	exit(606);
+}
+
+if(defined($templateParam) and (!-e ($templateParam))) {
+	&headerascii();
+	print STDERR "\t --- ERROR: The LaTeX Template file specified in the command line wasn't found [ $templateParam ], please check the provided path and try again. ---\n";
+	exit(501);
 }
 
 (my $sample= basename($BAM_file)) =~ s/\.[^.]+$//;
@@ -239,7 +247,7 @@ close OUT;
 ###################### If we are running VEP, call script or function to process the HTML into the needed tables
 if(defined($VEP_file)) {
 
-	$template = $template_withVEP;
+	$template = $template_withVEP if(!defined($templateParam));
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
 	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
