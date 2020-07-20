@@ -37,16 +37,21 @@ singularity pull shub://PGP-UK/GenomeChronicler
 ````
 
 
-Getting some test data (NA12878 from ENA, pre-mapped to GRCh38)
-````wget ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR323/ERR3239334/NA12878.final.cram #ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR194/ERR194160/NA12891_S1.bam
+Getting some test data (NA12878 from ENA, pre-mapped to GRCh38, and the respective reference)
+````wget ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR323/ERR3239334/NA12878.final.cram #A bit too large for a starting test
 singularity exec GenomeChronicler_latest.sif wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/data/CEU/NA12878/alignment/NA12878.alt_bwamem_GRCh38DH.20150718.CEU.low_coverage.cram
 
+singularity exec GenomeChronicler_latest.sif wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
+
 ````
+
+Converting data to BAM format 
+````
+singularity exec GenomeChronicler_latest.sif samtools view -T GRCh38_full_analysis_set_plus_decoy_hla.fa -b -o NA12878wxs.bam NA12878.alt_bwamem_GRCh38DH.20150718.CEU.low_coverage.cram
+````
+
 
 Running GenomeChronicler on the data
 ````
-singularity exec GenomeChronicler_latest.sif samtools -b -o NA12878wxs.bam NA12878.alt_bwamem_GRCh38DH.20150718.CEU.low_coverage.cram
 singularity run --app gc GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam 
 ````
-
-# 
