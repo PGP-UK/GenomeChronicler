@@ -152,7 +152,7 @@ sub headerascii {
 #     # #      #   ## #    # #    # #         #     # #    # #   #  #    # #   ## # #    # #      #      #   #  
  #####  ###### #    #  ####  #    # ######     #####  #    # #    #  ####  #    # #  ####  ###### ###### #    #  
 
-\tCopyright(C) 2016-2019 Jose Afonso Guerra-Assuncao et al \@ Personal Genome Project - United Kingdom
+\tCopyright(C) 2016-2020 Jose Afonso Guerra-Assuncao et al \@ Personal Genome Project - United Kingdom
 \tSee also: https://www.personalgenomes.org.uk
 
 EOP
@@ -163,7 +163,7 @@ EOP
 sub usage {
     print STDERR <<EOF
 
-\t+++ Welcome to GenomeChronicler - Version 19-299 +++
+\t+++ Welcome to GenomeChronicler - Version 20-200 +++
 
 [USAGE]
 $scriptName -h
