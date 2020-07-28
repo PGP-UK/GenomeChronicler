@@ -2,15 +2,12 @@ Bootstrap: docker
 From: ubuntu:bionic
 
 %runscript
-echo "Starting the GenomeChronicler container [20-200]..."
+echo "Starting the GenomeChronicler container [20-210]..."
 
 echo "Running GenomeChronicler itself"
 perl /GenomeChronicler/GenomeChronicler_mainDruid.pl "$@"
 
 %post
-
-# Install latest version of R (https://linuxize.com/post/how-to-install-r-on-ubuntu-18-04/)
-#  (do it this way otherwise by default will install 3.2)
 
 apt-get -y update
 
@@ -23,10 +20,6 @@ apt-get -y update
 
 apt-get -y install openjdk-8-jdk
 
-###Disabling oracle java for now... hoping openjdk is ok for GATK (which only supports java 8)
-#echo debconf shared/accepted-oracle-license-v1-2 select true | debconf-set-selections
-#echo debconf shared/accepted-oracle-license-v1-2 seen true | debconf-set-selections
-#apt-get -y --force-yes install oracle-java11-installer oracle-java11-set-default
 
 #apt-get -y update
 apt-get -y install r-base-core
