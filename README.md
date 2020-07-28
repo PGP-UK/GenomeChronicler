@@ -31,6 +31,13 @@ To handle the myriad dependencies present in this pipeline, it is avaliable thro
 
 # Easy Start using Singularity
 
+If you don't already have singularity on your system, or want to know more about it, head to their userguide at: https://sylabs.io/guides/3.1/user-guide/
+While Singularity is not needed to run GenomeChronicler, it does make setup much easier. 
+
+For a manual installation without Singularity, please follow the steps in the %post section of the Singularity file in this repository, to install all the dependencies.
+
+
+
 Downloading pre-packaged GenomeChronicler from SingularityHub
 ````
 singularity pull shub://PGP-UK/GenomeChronicler
@@ -53,7 +60,7 @@ singularity exec GenomeChronicler_latest.sif samtools view -T GRCh38_full_analys
 
 Running GenomeChronicler on the data
 ````
-singularity run --app gc GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam 
+singularity run GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam 
 ````
 
 # Command Line Options
