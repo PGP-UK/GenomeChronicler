@@ -184,16 +184,20 @@ while (my $line = <IN>) {
 close IN;
 close OUT;
 
-print STDERR "Finished processing file, now for the debug routines...\n";
 
+#Ensuring VCF gets stored for posterity like requested by reviewer 4. 
+system ("mv $VCFfilename ${resultsdir}/results/results_${sample}/${sample}.genotypingVCF.vcf.gz");
 
-for my $key1 (keys(%debugCounter)) {
-    for my $key2(keys(%{$debugCounter{$key1}})) {
+# print STDERR "Finished processing file, now for the debug routines...\n";
+
+### Commented to save space when running on AWS - re-enable for debug
+# for my $key1 (keys(%debugCounter)) {
+#     for my $key2(keys(%{$debugCounter{$key1}})) {
             
-        #In general check if debug is exactly 1, any deviations should be reported. (0 = not in gvcf; 2 = repeated in gvcf and a sign of trouble);
-        print STDERR "+++ ERROR\tLikely LowQual counts\t[$debugCounter{$key1}{$key2}]\t--\t$key1\t$key2\t$genData{$key1}{$key2}[3]\t+++\n" if($debugCounter{$key1}{$key2} != 1);
-    }
-}
+#         #In general check if debug is exactly 1, any deviations should be reported. (0 = not in gvcf; 2 = repeated in gvcf and a sign of trouble);
+#         print STDERR "+++ ERROR\tLikely LowQual counts\t[$debugCounter{$key1}{$key2}]\t--\t$key1\t$key2\t$genData{$key1}{$key2}[3]\t+++\n" if($debugCounter{$key1}{$key2} != 1);
+#     }
+# }
 
 
 
