@@ -2,7 +2,7 @@ Bootstrap: docker
 From: ubuntu:bionic
 
 %runscript
-echo "Starting the GenomeChronicler container [20-210]..."
+echo "Starting the GenomeChronicler container [22-146]..."
 
 echo "Running GenomeChronicler itself"
 perl /GenomeChronicler/GenomeChronicler_mainDruid.pl "$@"
