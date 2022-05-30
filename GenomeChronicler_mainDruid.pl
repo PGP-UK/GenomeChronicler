@@ -384,6 +384,8 @@ sub runLatex {
 
 print STDERR "\t +++ INFO: Cleaning up Temporary and Intermediate Files\n";
 
+#note to self: maybe there will not be a BAM file if we are using a VCF file
+
 system("rm -rf $BAM_file ${BAM_file}.bai");
 system("rm -rf ${resultsdir}/results/results_${sample}/temp/");
 system("rm -rf ${resultsdir}/results/results_${sample}/latest*.csv");
