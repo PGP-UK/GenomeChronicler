@@ -33,6 +33,7 @@ my $GATKthreads = 1;
 
 #my $conf_file = undef;
 my $BAM_file = undef;
+my $gVCF_file = undef;
 my $VEP_file = undef;
 
 
@@ -46,6 +47,7 @@ GetOptions(
 
 #	'configFile=s' => \$conf_file,
 	'bamFile|bam=s' => \$BAM_file,
+	'vcfFile|vcf|gvcf=s' => \$gVCF_file,
 	'vepFile|vep|html=s' => \$VEP_file,
 	'customTemplate|template|latex=s' => \$templateParam,
 	'resultsDir|outputDir=s' => \$resultsdir,
@@ -67,17 +69,23 @@ my $start_time = time();
 
 ##################### check file existence and proceed
 
-if(!defined($BAM_file)) {
+if(!defined($BAM_file) and !defined($gVCF_file)) {
 	&headerascii();
     &usage();
 
-	print STDERR "\t --- ERROR: No BAM file specified. Please check the usage notes above and try again ---\n";
+	print STDERR "\t --- ERROR: No BAM or gVCF file specified. Please check the usage notes above and try again ---\n";
 	exit(500);
 }
 
 if(! -e ($BAM_file)) {
 	&headerascii();
 	print STDERR "\t --- ERROR: The BAM file specified in the command line wasn't found [ $BAM_file ], please check the provided path and try again ---\n";
+	exit(404);
+}
+
+if(! -e ($gVCF_file)) {
+	&headerascii();
+	print STDERR "\t --- ERROR: The gVCF file specified in the command line wasn't found [ $gVCF_file ], please check the provided path and try again ---\n";
 	exit(404);
 }
 
@@ -93,9 +101,22 @@ if(defined($templateParam) and (!-e ($templateParam))) {
 	exit(501);
 }
 
-(my $sample= basename($BAM_file)) =~ s/\.[^.]+$//;
-$sample =~ s/\.recal//g;
-$sample =~ s/\.bam\.clean//gi;
+my $sample = undef;
+if(defined($BAM_file)) {
+	($sample= basename($BAM_file)) =~ s/\.[^.]+$//;
+	$sample =~ s/\.recal//g;
+	$sample =~ s/\.bam\.clean//gi;
+}
+elsif(defined($gVCF_file)) {
+	($sample= basename($gVCF_file)) =~ s/\.[^.]+$//;
+	$sample =~ s/\.g.vcf//gi;
+	$sample =~ s/\.vcf//gi;
+}
+else {
+	&headerascii();
+	print STDERR "\t --- MAJOR ERROR: No BAM or gVCF file found. Please check the usage notes above and try again ---\n";
+	exit(555);
+}
 
 system("mkdir -p ${resultsdir}/results/results_${sample}/temp");
 
@@ -113,6 +134,7 @@ if ( $debugFlag ) {
     print STDERR "DEBUG = $debugFlag\n";
     print STDERR "HELP = $helpFlag\n";
     print STDERR "BAM = $BAM_file\n";
+	print STDERR "VCF = $gVCF_file\n";
     print STDERR "VEP = $VEP_file\n\n";
     print STDERR "GATKthreads = $GATKthreads\n\n";
 
@@ -138,9 +160,6 @@ if ( $helpFlag ) {
 
 
 
-#	--configFile=					MapMi configuration file
-#	Note: Specifying a configuration file will override every other option given as input.
-
 sub headerascii {
     print STDERR <<EOP
 
@@ -152,7 +171,7 @@ sub headerascii {
 #     # #      #   ## #    # #    # #         #     # #    # #   #  #    # #   ## # #    # #      #      #   #  
  #####  ###### #    #  ####  #    # ######     #####  #    # #    #  ####  #    # #  ####  ###### ###### #    #  
 
-\tCopyright(C) 2016-2020 Jose Afonso Guerra-Assuncao et al \@ Personal Genome Project - United Kingdom
+\tCopyright(C) 2016-2022 Jose Afonso Guerra-Assuncao et al \@ Personal Genome Project - United Kingdom
 \tSee also: https://www.personalgenomes.org.uk
 
 EOP
@@ -163,11 +182,12 @@ EOP
 sub usage {
     print STDERR <<EOF
 
-\t+++ Welcome to GenomeChronicler - Version 20-200 +++
+\t+++ Welcome to GenomeChronicler - Version 22-146 +++
 
 [USAGE]
 $scriptName -h
 $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_variants.html ]
+$scriptName --vcfFile QualityRecal_gVCF.vcf [ --vepFile vep_summary_from_WGS_variants.html ]
 
 
 [PARAMETERS]
@@ -176,7 +196,12 @@ $scriptName --bamFile QualityRecal_BAMfile.bam [ --vepFile vep_summary_from_WGS_
 						obtained by running the first step of the Sarek nextflow pipeline,
 						or through other means that do respect the general principles of
 						the GATK Variation Calling Best Practices workflow. Note that no
-						variation calling is needed to run GenomeChronicler.
+						variation calling is needed to run GenomeChronicler.	
+	--vcfFile=		[REQUIRED] The path to a gVCF file produced by GATK or the GRCh38
+						reference genome. This can be obtained by running the first step 
+						of the Sarek nextflow pipeline, or through other means that do 
+						respect the general principles of the GATK Variation Calling Best 
+						Practices workflow. This avoids the need to run the GATK with GC.
 
 	--vepFile=		[OPTIONAL] For the summary tables to appear in the report, a VEP 
 						summary HTML file must be provided. This will likely be generated
@@ -266,22 +291,49 @@ if(defined($BAM_file)) {
 	}
 
 	$BAM_file = $BAM_file.".clean.BAM";
+
+
+
+	##################### Use the BAM to call the right script to compute currentAncestryPlot
+
+	print STDERR "\t +++ INFO: Generating Ancestry\n";
+
+	system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+
+	##################### Use the BAM to call the genotypes on the needed positions for this
+
+	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
+
+	system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
+
 }
+elsif(defined($VCF_file)) {
 
+	print STDERR "\t +++ INFO: Preprocessing VCF file\n";
+	
+	# if((!-e $VCF_file.".clean.vcf") or (!-e $VCF_file.".clean.vcf.idx")) {
+	# 	&cleanVCFfile($VCF_file);
+	# }
 
-##################### Use the BAM to call the right script to compute currentAncestryPlot
+	# $VCF_file = $VCF_file.".clean.vcf";
 
-print STDERR "\t +++ INFO: Generating Ancestry\n";
+	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+	system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
-##################### Use the BAM to call the genotypes on the needed positions for this
+	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-print STDERR "\t +++ INFO: Generating Genotypes Files\n";
+	system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
-system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
+}
+else {
+	print STDERR "\t +++ ERROR: No BAM or VCF file provided. Exiting.\n";
+	exit;
+}
 
 
 ##################### Use the generated genotypes file to produce the report tables by linking with the databases
