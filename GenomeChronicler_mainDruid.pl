@@ -12,11 +12,16 @@ use File::chdir;
 
 ################### parameters
 
-my $dir="/GenomeChronicler/";
+my $dir="";
+if(defined $ENV{'SINGULARITY_NAME'}){
+	$dir="/GenomeChronicler/";
+}
+
+
 my $resultsdir=`pwd`;
 chomp($resultsdir);
-my $template_withVEP = "${dir}/templates/reportTemplate_withVEP.tex";
-my $template_ohneVEP = "${dir}/templates/reportTemplate_ohneVEP.tex";
+my $template_withVEP = "${dir}templates/reportTemplate_withVEP.tex";
+my $template_ohneVEP = "${dir}templates/reportTemplate_ohneVEP.tex";
 my $template = $template_ohneVEP;
 my $GATKthreads = 1;
 
@@ -275,7 +280,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP if(!defined($templateParam));
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}/scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
+	system("perl ${dir}scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
 
 }
 
@@ -298,14 +303,14 @@ if(defined($BAM_file)) {
 
 	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-	system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 	##################### Use the BAM to call the genotypes on the needed positions for this
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
@@ -321,12 +326,12 @@ elsif(defined($VCF_file)) {
 
 	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-	system("perl ${dir}/scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}/scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}/scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
@@ -340,7 +345,7 @@ else {
 
 print STDERR "\t +++ INFO: Generating Genome Report Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
+system("perl ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
 
 
 ##################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
@@ -348,16 +353,16 @@ system("perl ${dir}/scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_
 
 print STDERR "\t +++ INFO: Filtering Report Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
-system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
-#system("perl ${dir}/scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.genoset.reportTable.csv");
+system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
+system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
+#system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.genoset.reportTable.csv");
 
 
 ##################### Call script to summarise found phenotypes as XLS spreadsheet
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("perl ${dir}scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
@@ -365,8 +370,8 @@ system("perl ${dir}/scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/re
 print STDERR "\t +++ INFO: Compiling Genome Report\n";
 
 system("cp $template ${resultsdir}/results/results_${sample}/${sample}_report_${dtag}.tex");
-system("cp ${dir}/templates/versionTable.txt ${resultsdir}/results/results_${sample}/");
-system("cp ${dir}/templates/GeneStructure.pdf ${resultsdir}/results/results_${sample}/");
+system("cp ${dir}templates/versionTable.txt ${resultsdir}/results/results_${sample}/");
+system("cp ${dir}templates/GeneStructure.pdf ${resultsdir}/results/results_${sample}/");
 
 my $TEMPLATETEX = "${sample}_report_".$dtag;
 
@@ -391,7 +396,7 @@ system("rm -rf ${resultsdir}/results/results_${sample}/temp/");
 system("rm -rf ${resultsdir}/results/results_${sample}/latest*.csv");
 system("rm -rf ${resultsdir}/results/results_${sample}/versionTable.txt ${resultsdir}/results/results_${sample}/GeneStructure.pdf");
 system("rm -rf ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.out ${resultsdir}/results/results_${sample}/texput.log ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.aux ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.log ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.tex");
-system("rm -rf ${dir}/GenomeChronicler_plot_generator_fromAncestry.Rout");
+system("rm -rf ${dir}GenomeChronicler_plot_generator_fromAncestry.Rout");
 
 sleep (1);
 
@@ -407,7 +412,7 @@ sub cleanBAMfile_noCHR() {
 
 	my $filename = shift;
 
-	#open(IN, "${dir}/software/samtools view -H $filename |") or die "Could not open input file: $!\n";
+	#open(IN, "${dir}software/samtools view -H $filename |") or die "Could not open input file: $!\n";
 	open(IN, "samtools view -H $filename |") or die "Could not open input file: $!\n";
 	open(OUT, ">$filename.tempHeader") or die "Could not open output file: $!\n";
 
@@ -425,8 +430,8 @@ sub cleanBAMfile_noCHR() {
 	close OUT;
 
 
-	#system("${dir}/software/samtools reheader $filename.tempHeader $filename > $filename.clean.BAM");
-	#system("${dir}/software/samtools index $filename.clean.BAM");	
+	#system("${dir}software/samtools reheader $filename.tempHeader $filename > $filename.clean.BAM");
+	#system("${dir}software/samtools index $filename.clean.BAM");	
 	system("samtools reheader $filename.tempHeader $filename > $filename.clean.BAM");
 	system("samtools index $filename.clean.BAM");
 

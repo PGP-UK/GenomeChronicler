@@ -14,16 +14,20 @@ use Exporter qw(import);
 
 
 
-my $dir="/GenomeChronicler/";
+
+my $dir="";
+if(defined $ENV{'SINGULARITY_NAME'}){
+	$dir="/GenomeChronicler/";
+}
 my $resultsdir = $dir;
 
 #- Also needs tabix and R in the PATH
 
-my $plink="${dir}/software/plink";
-my $gatk="${dir}/software/GenomeAnalysisTK.jar";
-my $ref_hs38="${dir}/reference/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa";
-my $initialBIM="${dir}/reference/1kGP_GRCh38_exome.bim";
-my $initialAnc="${dir}/reference/1kGP_GRCh38_exome";
+my $plink="${dir}software/plink";
+my $gatk="${dir}software/GenomeAnalysisTK.jar";
+my $ref_hs38="${dir}reference/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa";
+my $initialBIM="${dir}reference/1kGP_GRCh38_exome.bim";
+my $initialAnc="${dir}reference/1kGP_GRCh38_exome";
 
 my $bcftools="bcftools";
 my $samtools="samtools";
