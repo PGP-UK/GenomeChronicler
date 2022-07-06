@@ -203,8 +203,8 @@ $scriptName --vcfFile QualityRecal_gVCF.vcf [ --vepFile vep_summary_from_WGS_var
 						the GATK Variation Calling Best Practices workflow. Note that no
 						variation calling is needed to run GenomeChronicler.	
 	--vcfFile=		[REQUIRED] The path to a gVCF file produced by GATK or the GRCh38
-						reference genome. This can be obtained by running the first step 
-						of the Sarek nextflow pipeline, or through other means that do 
+						reference genome. This can be obtained by running all steps from 
+						the Sarek nextflow pipeline, or through other means that do 
 						respect the general principles of the GATK Variation Calling Best 
 						Practices workflow. This avoids the need to run the GATK with GC.
 
