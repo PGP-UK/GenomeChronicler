@@ -11,3 +11,4 @@ testData.tar
 reference
 reference.tar.gz
 
+*.simg

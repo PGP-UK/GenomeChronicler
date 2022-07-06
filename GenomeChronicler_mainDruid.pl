@@ -286,6 +286,7 @@ if(defined($VEP_file)) {
 
 
 ###################### Run script or subroutine to make sure that we don't have 'chr' in the contig names
+my $AFOgeno_file = undef;
 
 if(defined($BAM_file)) {
 
@@ -311,28 +312,28 @@ if(defined($BAM_file)) {
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
 	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-	my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
+	$AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
-elsif(defined($VCF_file)) {
+elsif(defined($gVCF_file)) {
 
 	print STDERR "\t +++ INFO: Preprocessing VCF file\n";
 	
-	# if((!-e $VCF_file.".clean.vcf") or (!-e $VCF_file.".clean.vcf.idx")) {
-	# 	&cleanVCFfile($VCF_file);
+	# if((!-e $gVCF_file.".clean.vcf") or (!-e $gVCF_file.".clean.vcf.idx")) {
+	# 	&cleanVCFfile($gVCF_file);
 	# }
 
-	# $VCF_file = $VCF_file.".clean.vcf";
+	# $gVCF_file = $gVCF_file.".clean.vcf";
 
 	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $VCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-	my $AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
+	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	$AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
 else {
