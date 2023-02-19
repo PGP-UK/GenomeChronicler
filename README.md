@@ -58,6 +58,8 @@ Running GenomeChronicler on the data
 singularity run GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam --GATKthreads 8
 ```
 
+> Note: you can use `singularity shell` to open an interactive linux to run commands directly
+
 ### With Docker
 
 1. Downloading pre-packaged GenomeChronicler from Github Packages
@@ -78,6 +80,7 @@ Running GenomeChronicler on the data
 docker run -v $PWD:/d/ genomechronicler genomechronicler --bamFile=/d/NA12878wxs.bam --resultsDir /d/out --GATKthreads 8
 ```
 
+> Note: you can use `docker run --rm -it  -v $PWD:/d/ genomechronicler bash` to open an interactive linux to run commands directly.
 
 ## Command Line Options
 
