@@ -92,26 +92,20 @@ docker run -v $PWD:/d/ genomechronicler genomechronicler --bamFile=/d/NA12878wxs
 
 # Development - Release a new Docker build
 
-1. Build Docker Image
-
-```bash
-curl -LO https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/reference.tar.gz
-curl -LO https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz
-
-docker build -t genomechronicler .
-```
-
-2. Upload to Github Packages
+1. Login using a token with access to Github Packages. See [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) for more info.
 
 ```bash
 export CR_PAT=YOUR_TOKEN
 
 echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+```
 
+2. Build docker image and upload to Github Packages
+
+```bash
 docker build -t ghcr.io/pgp-uk/genomechronicler:latest .
 docker build -t ghcr.io/pgp-uk/genomechronicler:v0.0.3 .
 
 docker push ghcr.io/pgp-uk/genomechronicler:latest
 docker push ghcr.io/pgp-uk/genomechronicler:v0.0.3
-
 ```

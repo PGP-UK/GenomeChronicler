@@ -61,14 +61,10 @@ COPY GenomeChronicler_mainDruid.pl /GenomeChronicler/
 COPY scripts/ /GenomeChronicler/scripts
 COPY templates/ /GenomeChronicler/templates/
 
-COPY reference.tar.gz .
-RUN tar xvf reference.tar.gz && rm reference.tar.gz
+RUN curl -Ls https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/reference.tar.gz | tar -zxvf
 
-COPY software.tar.gz .
-RUN tar xvf software.tar.gz && rm software.tar.gz \
-    && rm software.old.tar.gz && rm -rf software.darwin
-
-RUN mv software.linux software
+RUN curl -Ls https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz | \
+    tar zxvf - software.linux && mv software.linux software
 
 ENV PATH "$PATH:/GenomeChronicler/scripts"
 
