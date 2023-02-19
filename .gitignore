@@ -1,6 +1,6 @@
 GenomeChronicler_perlCoordinator.pl
 tryContainer.sh
-	
+
 software*
 
 results
@@ -12,3 +12,11 @@ reference
 reference.tar.gz
 
 *.simg
+
+*fa
+*bam
+*bai
+*cram
+*vcf
+*gz
+*fai
