@@ -82,13 +82,13 @@ if(!defined($BAM_file) and !defined($gVCF_file)) {
 	exit(500);
 }
 
-if(! -e ($BAM_file)) {
+if(defined($BAM_file) and (!-e ($BAM_file))) {
 	&headerascii();
 	print STDERR "\t --- ERROR: The BAM file specified in the command line wasn't found [ $BAM_file ], please check the provided path and try again ---\n";
 	exit(404);
 }
 
-if(! -e ($gVCF_file)) {
+if(defined($gVCF_file) and (!-e ($gVCF_file))) {
 	&headerascii();
 	print STDERR "\t --- ERROR: The gVCF file specified in the command line wasn't found [ $gVCF_file ], please check the provided path and try again ---\n";
 	exit(404);
