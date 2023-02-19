@@ -80,7 +80,7 @@ Running GenomeChronicler on the data
 docker run -v $PWD:/d/ genomechronicler genomechronicler --bamFile=/d/NA12878wxs.bam --resultsDir /d/out --GATKthreads 8
 ```
 
-> Note: you can use `docker run --rm -it  -v $PWD:/d/ genomechronicler bash` to open an interactive linux to run commands directly.
+> Note: you can use `docker run --rm -it -v $PWD:/d/ genomechronicler bash` to open an interactive linux to run commands directly.
 
 ## Command Line Options
 
@@ -93,7 +93,29 @@ docker run -v $PWD:/d/ genomechronicler genomechronicler --bamFile=/d/NA12878wxs
 | --customTemplate  | OPTIONAL     | For customising the output report, set this variable to the path of a custom LaTeX file to act as a template for the report. The default templates bundled with this software can also be found in the project github page.                                                                                                                                                                                                      |
 | --GATKthreads     | OPTIONAL     | Number of threads to use for the GATK genotyping steps of this processing pipeline.                                                                                                                                                                                                                                                                                                                                              |
 
-# Development - Release a new Docker build
+## Development
+
+### Working with a Docker Image
+
+There is a separate docker image that is designed for development:
+
+1. Clone the repository:
+
+2. Build the development docker image
+
+```bash
+docker build -f Dockerfile-dev -t gc_dev .
+```
+
+3. Start docker environment and map local directory inside.
+
+```bash
+docker run --rm -it -v $PWD:/GenomeChronicler gc_dev bash
+```
+
+4. Now any changes you make to the codebase in your host machine, will be immediately reflected in the docker image.
+
+### Release a new Docker build
 
 1. Login using a token with access to Github Packages. See [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) for more info.
 
