@@ -20,3 +20,7 @@ reference.tar.gz
 *vcf
 *gz
 *fai
+
+.DS_Store
+.idea/
+output/
