@@ -354,9 +354,8 @@ system("perl ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_f
 
 print STDERR "\t +++ INFO: Filtering Report Tables\n";
 
-system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
-system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
-#system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.genoset.reportTable.csv");
+system("python3 ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.py ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
+system("python3 ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.py ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
 
 
 ##################### Call script to summarise found phenotypes as XLS spreadsheet
