@@ -363,7 +363,8 @@ system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${re
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl ${dir}scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+#system("perl ${dir}scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("python3 ${dir}scripts/GenomeChronicler_XLSX_fromTables.py ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
