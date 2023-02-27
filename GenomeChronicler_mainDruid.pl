@@ -348,7 +348,8 @@ else {
 
 print STDERR "\t +++ INFO: Generating Genome Report Tables\n";
 
-system("perl ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
+# system("perl ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
+system("python3 ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.py $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
 
 
 ##################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
