@@ -312,7 +312,8 @@ if(defined($BAM_file)) {
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+#	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.py $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	$AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
