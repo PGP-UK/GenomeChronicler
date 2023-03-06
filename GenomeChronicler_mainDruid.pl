@@ -329,7 +329,8 @@ elsif(defined($gVCF_file)) {
 
 	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	# system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.py $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
