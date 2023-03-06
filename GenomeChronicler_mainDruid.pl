@@ -332,7 +332,8 @@ elsif(defined($gVCF_file)) {
 
 	# system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	system("python3 ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.py $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R"); # TODO: to be replaced
+	system("python3 ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.py $sample $sample $resultsdir"); # with Python plots. TODO: refine and replace R plots
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
