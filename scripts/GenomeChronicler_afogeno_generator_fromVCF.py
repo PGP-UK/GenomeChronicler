@@ -4,6 +4,7 @@ import os
 import sys
 import gzip
 from os.path import basename
+from tqdm import tqdm
 from pathlib import Path
 
 import fire
@@ -117,6 +118,8 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
     bed_path = f"{ref_bed}.gz"
     out_path = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.rsIDs.vcf.gz"
 
+    # subprocess.run(f"cat {vcf_path} | {bcftools} annotate -a {bed_path} -c CHROM,-,POS,ID | {bgzip} -c > {out_path}", shell=True)
+
     cat_proc = subprocess.Popen(["cat", vcf_path], stdout=subprocess.PIPE)
     annotate_proc = subprocess.Popen([bcftools, "annotate", "-a", bed_path, "-c", "CHROM,-,POS,ID"], stdin=cat_proc.stdout, stdout=subprocess.PIPE)
     bgzip_proc = subprocess.Popen(["bgzip", "-c"], stdin=annotate_proc.stdout, stdout=subprocess.PIPE)
@@ -136,17 +139,19 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
             if not line:
                 continue
             
-            data = line.split(b"\t")
-            gen_data.setdefault(data[0], {})[int(data[2])] = data
-            counter_template.setdefault(data[0], {})[int(data[2])] = 0
-
+            # data = line.split(b"\t")
+            data = line.decode().split("\t")
+            # gen_data.setdefault(data[0], {})[int(data[2])] = data
+            gen_data[(data[0],data[2])] = data
+            counter_template[(data[0],data[2])] = 0
 
     VCFfilename = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.rsIDs.vcf.gz"
     debugCounter = {}
-
-    with subprocess.Popen(f"gzip -dcf {VCFfilename} | grep -v '0/0:0:0:0:0,0,0' | grep -v LowQual | cut -f 1,2,4,5,10 | uniq |", 
+    
+    with subprocess.Popen(f'gzip -dcf {VCFfilename} | grep -v "0/0:0:0:0:0,0,0"| grep -v "0/0:0:0:0:0,0,0" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq', 
                           shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc1, \
          open(f"{resultsdir}/results/results_{sample}/temp/{sample}.afogeno38.txt", "w") as out_file:
+        # for line_bytes in proc1.stdout:
         for line_bytes in proc1.stdout:
             line = line_bytes.decode().rstrip()
 
@@ -162,19 +167,20 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
             genotype = ["NA", "NA"]
             extra = "NA"
 
+            pos = (data[0], data[1])
+
             if data[4] != "./.":
                 a1, a2 = data[2], data[3]
                 genotype, extra = build_genotype(a1, a2, data[4])
             else:
                 # No reads there
-                pos = (data[0], data[1])
                 debugCounter[pos] = debugCounter.get(pos, 0) + 1
                 continue
 
             data.extend(genotype)
             data.append(extra)
 
-            pos = (data[0], data[1])
+            # pos = (data[0], data[1])
             if pos in gen_data:
                 d2 = gen_data[pos]
                 out_data = "\t".join(d2) + "\t" + "\t".join(data) + "\n"
