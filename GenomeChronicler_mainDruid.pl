@@ -334,7 +334,8 @@ elsif(defined($gVCF_file)) {
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	# system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.py $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
 	$AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
