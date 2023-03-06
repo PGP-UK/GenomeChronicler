@@ -280,7 +280,8 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP if(!defined($templateParam));
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
+#	system("perl ${dir}scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
+	system("python3 ${dir}scripts/GenomeChronicler_vepTables_fromVEP.py $VEP_file ${resultsdir}/results/results_${sample}/");
 
 }
 
