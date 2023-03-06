@@ -136,15 +136,17 @@ def afogeno_generator_from_BAM(input_BAM, resultsdir="", numThreads=4,
             if not line:
                 continue
             
-            data = line.split(b"\t")
-            gen_data.setdefault(data[0], {})[int(data[2])] = data
-            counter_template.setdefault(data[0], {})[int(data[2])] = 0
+            # data = line.split(b"\t")
+            data = line.decode().split("\t")
+            # gen_data.setdefault(data[0], {})[int(data[2])] = data
+            gen_data[(data[0],data[2])] = data
+            counter_template[(data[0],data[2])] = 0
 
 
     VCFfilename = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.rsIDs.vcf.gz"
     debugCounter = {}
 
-    with subprocess.Popen(f"gzip -dcf {VCFfilename} | grep -v '0/0:0:0:0:0,0,0' | grep -v LowQual | cut -f 1,2,4,5,10 | uniq |", 
+    with subprocess.Popen(f"gzip -dcf {VCFfilename} | grep -v '0/0:0:0:0:0,0,0' | grep -v LowQual | cut -f 1,2,4,5,10 | uniq", 
                           shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc1, \
          open(f"{resultsdir}/results/results_{sample}/temp/{sample}.afogeno38.txt", "w") as out_file:
         for line_bytes in proc1.stdout:
