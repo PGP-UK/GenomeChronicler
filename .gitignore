@@ -23,4 +23,12 @@ reference.tar.gz
 
 .DS_Store
 .idea/
-output/
+/data/
+/reference/
+/templates/
+/tests_temp/
+/tests_data/
+/software/
+/testData/
+/perl/
+/output/
