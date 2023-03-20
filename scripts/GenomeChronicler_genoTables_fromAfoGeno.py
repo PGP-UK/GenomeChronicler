@@ -222,12 +222,19 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
             name = name.lower()
             genosets[name] = data
 
-    output_path = f'{outdir}/latest.good.reportTable.csv'
+    # output_path = f'{outdir}/latest.good.reportTable.csv'
     # if not Path(output_path).exists():
     if True:
         IN = open(filename)
         rows_GOOD = []
         rows_BAD = []
+        Path(f"{outdir}/latest.good.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
+        Path(f"{outdir}/latest.bad.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
+        proc_good = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {outdir}/latest.good.reportTable.csv", 
+                shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {outdir}/latest.bad.reportTable.csv", 
+                shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    
         for line in tqdm(IN, disable=not verbose):
             # for line in IN:
             line = line.strip()
@@ -358,11 +365,9 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
                         # print("WARNING: Go here and with a fair sense of justice determine is this is good or bad\n", tmpString, "\n")
                         continue
                     elif alleles[genotype[0]][genotype[1]][0] == "Good":
-                        # GOOD.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n")
-                        rows_GOOD += [f"{tmpString},{gnomAD},{getevidence},{clinvar}\n"]
+                        proc_good.stdin.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n".encode())
                     elif alleles[genotype[0]][genotype[1]][0] == "Bad":
-                        # BAD.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n")
-                        rows_BAD += [f"{tmpString},{gnomAD},{getevidence},{clinvar}\n"]
+                        proc_bad.stdin.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n".encode())
 
                 elif countGenotype > 2:
                     print("IMPORTANT: ", debugBuffer)
@@ -370,26 +375,9 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
                     print("IMPORTANT: Please debug this here as I couldn't find the right alleles [", strand, "] [",
                           countGenotype, "]\n\n\n")
 
-        GOOD = open(f'{outdir}/latest.good.reportTable.csv', 'w')
-        BAD = open(f'{outdir}/latest.bad.reportTable.csv', 'w')
+        proc_good.stdin.close()
+        proc_bad.stdin.close()
 
-        # deduplicate the data
-        rows_unique_GOOD = set()
-        with open(f"{outdir}/latest.good.reportTable.csv", "w") as GOOD:
-            GOOD.write('Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n')
-            for row in rows_GOOD:
-                if row not in rows_unique_GOOD:
-                    rows_unique_GOOD.add(row)
-                    GOOD.write(row)
-        pd.read_csv(f"{outdir}/latest.good.reportTable.csv",dtype={'Mag.':str}).sort_values('Mag.', ascending=False, key=lambda x:x.astype('float')).to_csv(f"{outdir}/latest.good.reportTable.csv",index=False)
-        rows_unique_BAD = set()
-        with open(f"{outdir}/latest.bad.reportTable.csv", "w") as BAD:
-            BAD.write('Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n')
-            for row in rows_BAD:
-                if row not in rows_unique_BAD:
-                    rows_unique_BAD.add(row)
-                    BAD.write(row)
-        pd.read_csv(f"{outdir}/latest.bad.reportTable.csv",dtype={'Mag.':str}).sort_values('Mag.', ascending=False, key=lambda x:x.astype('float')).to_csv(f"{outdir}/latest.bad.reportTable.csv",index=False)
 
     positiveGenosets = {}
     for genoset in tqdm(allGenosets, disable=not verbose):
@@ -403,8 +391,9 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
     with open(f"{outdir}/latest.genoset.reportTable.csv", "w") as geno:
         geno.write("Magnitude,Identifier,Summary\n")
 
-    sort_process = subprocess.Popen(f"sort -t \",\" -k 1,1nr >>{outdir}/latest.genoset.reportTable.csv", stdin=subprocess.PIPE, shell=True)
-
+    sort_process = subprocess.Popen(f"sort -t \",\" -k 1,1nr >> {outdir}/latest.genoset.reportTable.csv", stdin=subprocess.PIPE, shell=True)
+    # proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {outdir}/latest.bad.reportTable.csv", 
+    #             shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     for geno in sorted(positiveGenosets.keys()):
         rvG = sth1g.execute(sth1g_sql, (geno,))
         while True:
@@ -415,7 +404,7 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
                 sort_process.stdin.write(f"{row[2]},{generate_SNPedia_url(row[0])},{generate_Summary_url(row[0], cleanSummaryString(row[3]))}\n".encode())
 
     sort_process.stdin.close()
-    sort_process.wait()
+    # sort_process.wait()
 
     print("Operation done successfully")
     snpedia_db.close()
