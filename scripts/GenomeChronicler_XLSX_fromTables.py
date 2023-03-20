@@ -79,7 +79,7 @@ def export_genotypes_xlsx_from_csvs(csv_dir, xlsx_output_path,
 
                         url_parts = data.split("}{")
                         url = url_parts[0].replace("href{", "")
-                        text = url_parts[1].replace("}", "'")
+                        text = url_parts[1].replace("}", "")
 
                         worksheet.write_url(cr, cc, url, urlformat, text)
                         strLength = len(text)
