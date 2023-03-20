@@ -63,7 +63,7 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
     # if len(sys.argv) > 3:
     #     numThreads = sys.argv[3]
 
-    subprocess.run(["mkdir", "-p", f"{resultsdir}/results/results_{sample}/temp"])
+    subprocess.run(["mkdir", "-p", f"{resultsdir}/temp"])
 
     if not os.path.exists(input_VCF):
         sys.exit(f"The VCF file specified does not exist, please double-check the path and try again [{input_VCF}]")
@@ -86,7 +86,7 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
 
     #
     # # Define the command to run GATK HaplotypeCaller
-    # output_path = f"{resultsdir}/results/results_{sample}/temp/{sample}.g.vcf"
+    # output_path = f"{resultsdir}/temp/{sample}.g.vcf"
     # if not Path(output_path).exists():
     #     runstr = f"java -jar {gatk}"
     #     runstr += f" -T HaplotypeCaller -R {ref_hs38}"
@@ -98,7 +98,7 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
     #     os.system(runstr)
     #
     # # Define the command to run GATK GenotypeGVCFs
-    # output_path2 = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.vcf"
+    # output_path2 = f"{resultsdir}/temp/{sample}.genotypes.vcf"
     # if not Path(output_path2).exists():
     #     runstr2 = f"java -jar {gatk}"
     #     runstr2 += f" -T GenotypeGVCFs -R {ref_hs38}"
@@ -111,12 +111,12 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
 
 
     # Add rsIDs to the VCF file using bcftools and bgzip
-    # os.system(f"cat {resultsdir}/results/results_{sample}/temp/{sample}.genotypes.vcf | {bcftools} annotate -a {ref_bed}.gz -c CHROM,-,POS,ID | {bgzip} -c > {resultsdir}/results/results_{sample}/temp/{sample}.genotypes.rsIDs.vcf.gz")
-    # vcf_path = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.vcf"
+    # os.system(f"cat {resultsdir}/temp/{sample}.genotypes.vcf | {bcftools} annotate -a {ref_bed}.gz -c CHROM,-,POS,ID | {bgzip} -c > {resultsdir}/temp/{sample}.genotypes.rsIDs.vcf.gz")
+    # vcf_path = f"{resultsdir}/temp/{sample}.genotypes.vcf"
 
     vcf_path = input_VCF
     bed_path = f"{ref_bed}.gz"
-    out_path = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.rsIDs.vcf.gz"
+    out_path = f"{resultsdir}/temp/{sample}.genotypes.rsIDs.vcf.gz"
 
     # subprocess.run(f"cat {vcf_path} | {bcftools} annotate -a {bed_path} -c CHROM,-,POS,ID | {bgzip} -c > {out_path}", shell=True)
 
@@ -145,12 +145,12 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
             gen_data[(data[0],data[2])] = data
             counter_template[(data[0],data[2])] = 0
 
-    VCFfilename = f"{resultsdir}/results/results_{sample}/temp/{sample}.genotypes.rsIDs.vcf.gz"
+    VCFfilename = f"{resultsdir}/temp/{sample}.genotypes.rsIDs.vcf.gz"
     debugCounter = {}
     
-    with subprocess.Popen(f'gzip -dcf {VCFfilename} | grep -v "0/0:0:0:0:0,0,0"| grep -v "0/0:0:0:0:0,0,0" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq', 
+    with subprocess.Popen(f'gzip -dcf {VCFfilename} | grep -v "0/0:0:0:0:0,0,0" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq', 
                           shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc1, \
-         open(f"{resultsdir}/results/results_{sample}/temp/{sample}.afogeno38.txt", "w") as out_file:
+         open(f"{resultsdir}/temp/{sample}.afogeno38.txt", "w") as out_file:
         # for line_bytes in proc1.stdout:
         for line_bytes in proc1.stdout:
             line = line_bytes.decode().rstrip()
@@ -189,7 +189,7 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
                 debugCounter[pos] = debugCounter.get(pos, 0) + 1
 
     # Move the original VCF file to a new location
-    os.rename(VCFfilename, f"{resultsdir}/results/results_{sample}/{sample}.genotypingVCF.vcf.gz")
+    os.rename(VCFfilename, f"{resultsdir}/{sample}.genotypingVCF.vcf.gz")
 
 
 if __name__ == '__main__':
