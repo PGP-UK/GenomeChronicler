@@ -7,6 +7,12 @@ from pathlib import Path
 
 import fire
 
+def ucfirst(s):
+    if len(s) > 0:
+        return s[0].upper() + s[1:]
+    else:
+        return s
+
 def get_vepTables_from_VEP(filename, out_dir="."):
 
     # # Sort out input
@@ -101,7 +107,7 @@ def get_vepTables_from_VEP(filename, out_dir="."):
                 for d in table:
                     perc = f"{round(float(d[1]) / summer * 100, 2):0.2f}"
                     if float(perc) > 1:
-                        d[0] = d[0].capitalize()
+                        d[0] = ucfirst(d[0])
                         d[1] = perc
                         out_file.write("{}\n".format(",".join([str(x) for x in d])))
                     else:
