@@ -11,14 +11,14 @@ def filter_final_report_csv(csv_input_path, csv_output_path=None, DEBUG=False):
 
     '''
     # read csv
-    df = pd.read_csv(csv_input_path)
+    df = pd.read_csv(csv_input_path,dtype={'Mag.':'str'})
 
     # filter
     if len(df.columns) <= 4:
         if DEBUG:
             print("WARNING: No links found")
             return
-    df = df[~(df['Mag.']==0)]
+    df = df[~(df['Mag.'].astype('float')==0)]
     df = df[~(df['Identifier'].str.startswith('{rs')|df['Identifier'].str.startswith('{i'))]
 
     # export
