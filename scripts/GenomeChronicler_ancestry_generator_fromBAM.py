@@ -10,7 +10,7 @@ import fire
 
 # get list of SNPs from 1kGP
 def _get_list_of_snps_from_1kGP(initialBIM, sample, resultsdir, hasCHRflag, bgzip, tabix):
-    output_path = f"{resultsdir}/results/results_{sample}/temp/1kGP_GRCh38_nonAT_CG.bed"
+    output_path = f"{resultsdir}/temp/1kGP_GRCh38_nonAT_CG.bed"
     if Path(output_path).exists():
         return
     with open(initialBIM, "r") as inf, open(output_path, "w") as outf:
@@ -32,13 +32,13 @@ def _get_list_of_snps_from_1kGP(initialBIM, sample, resultsdir, hasCHRflag, bgzi
             if a[4] == 'G' and a[5] == 'C':
                 continue
             outf.write(f"{a[0]}\t{int(a[3])-1}\t{a[3]}\t{a[1]}\n")
-    os.system(f"{bgzip} -c {resultsdir}/results/results_{sample}/temp/1kGP_GRCh38_nonAT_CG.bed > {resultsdir}/results/results_{sample}/temp/1kGP_GRCh38_nonAT_CG.bed.gz")
-    os.system(f"{tabix} -p bed {resultsdir}/results/results_{sample}/temp/1kGP_GRCh38_nonAT_CG.bed.gz")
+    os.system(f"{bgzip} -c {resultsdir}/temp/1kGP_GRCh38_nonAT_CG.bed > {resultsdir}/temp/1kGP_GRCh38_nonAT_CG.bed.gz")
+    os.system(f"{tabix} -p bed {resultsdir}/temp/1kGP_GRCh38_nonAT_CG.bed.gz")
 
 
 # convert BAM to a gvcf that contains only the 1kgp snps filtered above
 def _get_gvcf(bam, resultsdir, sample, gatk, ref_hs38, numThreads, bcftools, bgzip):
-    tmp_dir = f"{resultsdir}/results/results_{sample}/temp"
+    tmp_dir = f"{resultsdir}/temp"
     output_path = f"{tmp_dir}/{sample}.rsIDs.gvcf.gz"
     if Path(output_path).exists():
         return
@@ -58,7 +58,7 @@ def _get_gvcf(bam, resultsdir, sample, gatk, ref_hs38, numThreads, bcftools, bgz
 
 
 def _gvcf_to_plink(plink, resultsdir, sample):
-    tmp_dir = f"{resultsdir}/results/results_{sample}/temp"
+    tmp_dir = f"{resultsdir}/temp"
     output_path = f"{tmp_dir}/{sample}.fam"
     if Path(output_path).exists():
         return
@@ -78,7 +78,7 @@ def _gvcf_to_plink(plink, resultsdir, sample):
     subprocess.run(cmd2, shell=True)
 
 # def _gvcf_to_plink(plink, resultsdir, sample):
-#     tmp_dir = f"{resultsdir}/results/results_{sample}/temp"
+#     tmp_dir = f"{resultsdir}/temp"
 #     # Convert gvcf to plink
 #     runstr1q = f"{plink} --biallelic-only --vcf-require-gt --vcf {tmp_dir}/{sample}.rsIDs.gvcf.gz --out {tmp_dir}/{sample} --allow-extra-chr --make-bed --double-id"
 #     os.system(runstr1q)
@@ -91,7 +91,7 @@ def _gvcf_to_plink(plink, resultsdir, sample):
 
 
 def _merge_pgp_1kGP(plink, resultsdir, sample, initialAnc):
-    tmp_dir = f"{resultsdir}/results/results_{sample}/temp"
+    tmp_dir = f"{resultsdir}/temp"
     # output_path = f"{tmp_dir}/{sample}.fam"
     # if Path(output_path).exists():
     #     return
@@ -111,7 +111,7 @@ def _merge_pgp_1kGP(plink, resultsdir, sample, initialAnc):
 
 
 def _subset_unlinked_snps(plink, resultsdir, sample):
-    tmp_dir = f"{resultsdir}/results/results_{sample}/temp"
+    tmp_dir = f"{resultsdir}/temp"
     output_path = f"{tmp_dir}/{sample}_1kGP_pruned.bed"
     if Path(output_path).exists():
         return
@@ -165,7 +165,7 @@ def ancestry_generator_from_BAM(bam, resultsdir="", numThreads=4,
     # if len(sys.argv) > 2:
     #     numThreads = sys.argv[2]
 
-    os.system(f"mkdir -p {resultsdir}/results/results_{sample}/temp")
+    os.system(f"mkdir -p {resultsdir}/temp")
 
     # Also check for the need to samtools index this stuff
     # java -jar software/picard.jar CreateSequenceDictionary R=software/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa O=software/GRCh38_full_analysis_set_plus_decoy_hla_noChr.dict
@@ -215,7 +215,7 @@ def ancestry_generator_from_BAM(bam, resultsdir="", numThreads=4,
     # ------------------------------------------
     # -- Perform PCA
     # ------------------------------------------
-    tmp_dir = f"{resultsdir}/results/results_{sample}/temp"
+    tmp_dir = f"{resultsdir}/temp"
     output_path = f"{tmp_dir}/{sample}_1kGP_pruned_pca_20.eigenvec"
     if Path(output_path).exists():
         return
