@@ -9,6 +9,7 @@ from pathlib import Path
 
 import fire
 
+
 def build_genotype(a1, a2, gen):
     alleles = [a1] + a2.split(",")
     extras = [""] * len(alleles)
@@ -30,38 +31,22 @@ def build_genotype(a1, a2, gen):
     extra = ";".join([extras[int(i)] for i in gen.split("/")]).strip(";")
     return res, extra
 
+
 def uniq(l):
     return list(set(l))
 
 
-def afogeno_generator_from_VCF(input_VCF, resultsdir="",
-        dir_reference='reference', dir_software='software', workdir="", ):
-
+def afogeno_generator_from_VCF(input_VCF, sample, resultsdir="",
+                               dir_reference='reference', dir_software='software', workdir="", ):
     if 'SINGULARITY_NAME' in os.environ:
         workdir = "/GenomeChronicler/"
-    
-    # resultsdir = workdir
+
     ref_bed = workdir + f"{dir_reference}/snps.19-114.unique.nochr.bed"
-    # gatk = workdir + f"{dir_software}/GenomeAnalysisTK.jar"
-    # ref_hs38 = workdir + f"{dir_reference}/GRCh38_full_analysis_set_plus_decoy_hla_noChr.fa"
     bcftools = "bcftools"
-    # samtools = "samtools"
     bgzip = workdir + f"{dir_software}/bgzip"
     tabix = workdir + f"{dir_software}/tabix"
 
-    
-
-    # if not len(sys.argv) > 1:
-    #     sys.exit("Please provide a single base recalibrated BAM file to this script and optional output directory\n")
-
-    # input_VCF = sys.argv[1]
-    sample = basename(input_VCF).rsplit(".", 1)[0]
-
-    # if len(sys.argv) > 2:
-    #     resultsdir = sys.argv[2]
-
-    # if len(sys.argv) > 3:
-    #     numThreads = sys.argv[3]
+    # sample = basename(input_VCF).rsplit(".", 1)[0]
 
     subprocess.run(["mkdir", "-p", f"{resultsdir}/temp"])
 
@@ -72,43 +57,17 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
         sys.exit(f"The BED file specified does not exist, please double-check the path and try again [{ref_bed}]")
 
     if not os.path.exists(ref_bed + ".gz"):
-        #Sort and compress BED
+        # Sort and compress BED
         subprocess.run(["sort", "-k", "1,1", "-k2,2n", ref_bed, ">", "tempAAA"])
         subprocess.run(["mv", "tempAAA", ref_bed])
         subprocess.run([bgzip, "-c", f"{ref_bed}" + " > " + f"{ref_bed}.gz"])
 
-        #Force tabix re-index
+        # Force tabix re-index
         subprocess.run([tabix, "-p", "bed", f"{ref_bed}.gz"])
 
     if not os.path.exists(f"{ref_bed}.gz.tbi"):
-        #tabix index
+        # tabix index
         subprocess.run([tabix, "-p", "bed", f"{ref_bed}.gz"])
-
-    #
-    # # Define the command to run GATK HaplotypeCaller
-    # output_path = f"{resultsdir}/temp/{sample}.g.vcf"
-    # if not Path(output_path).exists():
-    #     runstr = f"java -jar {gatk}"
-    #     runstr += f" -T HaplotypeCaller -R {ref_hs38}"
-    #     runstr += f" -I {input_VCF} -nct {numThreads}"
-    #     runstr += f" --emitRefConfidence GVCF -L {ref_bed}"
-    #     runstr += f" -o {output_path}"
-    #
-    #     # Run GATK HaplotypeCaller
-    #     os.system(runstr)
-    #
-    # # Define the command to run GATK GenotypeGVCFs
-    # output_path2 = f"{resultsdir}/temp/{sample}.genotypes.vcf"
-    # if not Path(output_path2).exists():
-    #     runstr2 = f"java -jar {gatk}"
-    #     runstr2 += f" -T GenotypeGVCFs -R {ref_hs38}"
-    #     runstr2 += f" --variant {output_path}"
-    #     runstr2 += f" -allSites -o {output_path2}"
-    #     runstr2 += " -stand_emit_conf 10 -stand_call_conf 30"
-    #
-    #     # Run GATK GenotypeGVCFs
-    #     os.system(runstr2)
-
 
     # Add rsIDs to the VCF file using bcftools and bgzip
     # os.system(f"cat {resultsdir}/temp/{sample}.genotypes.vcf | {bcftools} annotate -a {ref_bed}.gz -c CHROM,-,POS,ID | {bgzip} -c > {resultsdir}/temp/{sample}.genotypes.rsIDs.vcf.gz")
@@ -121,14 +80,14 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
     # subprocess.run(f"cat {vcf_path} | {bcftools} annotate -a {bed_path} -c CHROM,-,POS,ID | {bgzip} -c > {out_path}", shell=True)
 
     cat_proc = subprocess.Popen(["cat", vcf_path], stdout=subprocess.PIPE)
-    annotate_proc = subprocess.Popen([bcftools, "annotate", "-a", bed_path, "-c", "CHROM,-,POS,ID"], stdin=cat_proc.stdout, stdout=subprocess.PIPE)
+    annotate_proc = subprocess.Popen([bcftools, "annotate", "-a", bed_path, "-c", "CHROM,-,POS,ID"],
+                                     stdin=cat_proc.stdout, stdout=subprocess.PIPE)
     bgzip_proc = subprocess.Popen(["bgzip", "-c"], stdin=annotate_proc.stdout, stdout=subprocess.PIPE)
 
     with open(out_path, "wb") as f:
         f.write(bgzip_proc.communicate()[0])
 
-
-    ## Generate AFO Geno 38 file
+    # Generate AFO Geno 38 file
     gen_data = {}
     counter_template = {}
 
@@ -138,19 +97,20 @@ def afogeno_generator_from_VCF(input_VCF, resultsdir="",
             line = line.strip()
             if not line:
                 continue
-            
+
             # data = line.split(b"\t")
             data = line.decode().split("\t")
             # gen_data.setdefault(data[0], {})[int(data[2])] = data
-            gen_data[(data[0],data[2])] = data
-            counter_template[(data[0],data[2])] = 0
+            gen_data[(data[0], data[2])] = data
+            counter_template[(data[0], data[2])] = 0
 
     VCFfilename = f"{resultsdir}/temp/{sample}.genotypes.rsIDs.vcf.gz"
     debugCounter = {}
-    
-    with subprocess.Popen(f'gzip -dcf {VCFfilename} | grep -v "0/0:0:0:0:0,0,0" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq', 
-                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc1, \
-         open(f"{resultsdir}/temp/{sample}.afogeno38.txt", "w") as out_file:
+
+    with subprocess.Popen(
+            f'gzip -dcf {VCFfilename} | grep -v "0/0:0:0:0:0,0,0" | grep -v LowQual | cut -f 1,2,4,5,10 | uniq',
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc1, \
+            open(f"{resultsdir}/temp/{sample}.afogeno38.txt", "w") as out_file:
         # for line_bytes in proc1.stdout:
         for line_bytes in proc1.stdout:
             line = line_bytes.decode().rstrip()

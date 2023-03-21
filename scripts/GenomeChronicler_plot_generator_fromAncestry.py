@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib import patches
 
 names = [
     "Han Chinese (Bejing, China)", "Japanese (Tokyo, Japan)", "Southern Han Chinese",
@@ -53,7 +54,7 @@ def plot_generator_from_ancestry(eigenvec_path, sample_id, output_dir):
 
     df = pd.read_csv(eigenvec_path,header=None,sep=' ')
     output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True,exists_ok=True)
+    output_dir.mkdir(parents=True,exist_ok=True)
 
     # Define the color palette
     my_palette = sns.color_palette("Paired", n_colors=26)
@@ -67,7 +68,7 @@ def plot_generator_from_ancestry(eigenvec_path, sample_id, output_dir):
     full2color[sample_id] = 'black'
 
     df['group'] = df[0].apply(lambda x: x.split('_')[0])
-    df['group'] = df['group'].mask(df[0] == sample_id, 'sample')
+    df['group'] = df['group'].mask(df[0].str.contains(sample_id), 'sample')
     df['color'] = df['group'].map(group2color)
     df['full_name'] = df['group'].map(short2full)
     df['x'] = df[2] + 0.5 * df[3] - 0.5 * df[4]
@@ -83,7 +84,7 @@ def plot_generator_from_ancestry(eigenvec_path, sample_id, output_dir):
     bottom_y = loc_y - ((df['y'].max() - df['y'].min()) / 30)
 
     df_zoom = df[(df['x'] < top_x) & (df['x'] > bottom_x) & (df['y'] < top_y) & (df['y'] > bottom_y)]
-    print(df_zoom.shape)
+    # print(df_zoom.shape)
     df_zoom.head(2)
 
     fig = plt.figure(figsize=(12, 10))
@@ -120,7 +121,7 @@ def plot_generator_from_ancestry(eigenvec_path, sample_id, output_dir):
     ax_zoom.set_xticks([])
     ax_zoom.set_yticks([])
 
-    fig.savefig(f"{output_dir}/AncestryPlot_py.pdf", format='pdf', dpi=150, bbox_inches='tight')
+    fig.savefig(f"{output_dir}/AncestryPlot.pdf", format='pdf', dpi=150, bbox_inches='tight')
 
 if __name__ == '__main__':
     fire.Fire(plot_generator_from_ancestry)

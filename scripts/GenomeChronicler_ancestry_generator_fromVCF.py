@@ -127,7 +127,7 @@ def _subset_unlinked_snps(plink, resultsdir, sample):
     os.system(runstr5)
 
 
-def ancestry_generator_from_VCF(vcf, resultsdir=""):
+def ancestry_generator_from_VCF(vcf, sample, resultsdir=""):
 
     dir = ""
     if 'SINGULARITY_NAME' in os.environ:
@@ -152,9 +152,9 @@ def ancestry_generator_from_VCF(vcf, resultsdir=""):
     #     sys.exit(1)
 
     # VCF = sys.argv[0]
-    sample = basename(vcf)
-    sample = sample.rsplit(".", 1)[0]
-    sample = sample.replace(".recal", "")
+    # sample = basename(vcf)
+    # sample = sample.rsplit(".", 1)[0]
+    # sample = sample.replace(".recal", "")
     # sample = sample.replace(".bam.clean", "")
 
     # if len(sys.argv) > 1:
