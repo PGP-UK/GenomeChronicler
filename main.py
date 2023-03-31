@@ -10,6 +10,8 @@ import shutil
 import time
 import os
 
+from tqdm import tqdm
+
 
 def print_header_ascii():
     print("""
@@ -26,37 +28,24 @@ def print_header_ascii():
 """)
 
 
-def cleanBAMfile_noCHR(filename):
-    # Create a temporary header file
-    with open(f"{filename}.tempHeader", "w") as temp_header_file:
-        # Run samtools view command and get its output
-        cmd = f"samtools view -H {filename}"
-        samtools_view_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, shell=True)
+def cleanBAMfile_noCHR(filename, verbose=False):
+    with subprocess.Popen(["samtools", "view", "-H", filename], stdout=subprocess.PIPE, text=True) as proc:
+        # Write the modified header lines to a temporary file
+        with open(f"{filename}.tempHeader", "w") as temp_header_file:
+            for line in tqdm(proc.stdout, verbose=verbose, desc="Cleaning BAM file"):
+                line = line.strip()
+                if not line:
+                    continue
 
-        for line in samtools_view_process.stdout:
-            line = line.strip()
-            if line == "":
-                continue
+                line = line.replace("SQ\tSN:chr", "SQ\tSN:")
+                temp_header_file.write(f"{line}\n")
 
-            # Replace 'SQ\tSN:chr' with 'SQ\tSN:'
-            line = line.replace("SQ\tSN:chr", "SQ\tSN:")
-
-            # Write to the temporary header file
-            temp_header_file.write(line + "\n")
-
-        samtools_view_process.communicate()
-
-    # Run samtools reheader command
-    cmd = f"samtools reheader {filename}.tempHeader {filename}"
-    subprocess.run(cmd, stdout=subprocess.PIPE, text=True, shell=True)
-
-    # Create the clean BAM file
-    cmd = f"samtools index {filename}.clean.BAM"
-    subprocess.run(cmd, shell=True)
+    # Reheader the BAM file and create an index
+    subprocess.run(f"samtools reheader {filename}.tempHeader {filename} > {filename}.clean.BAM", shell=True)
+    subprocess.run(f"samtools index {filename}.clean.BAM", shell=True)
 
     # Remove the temporary header file
-    cmd = f"rm {filename}.tempHeader"
-    subprocess.run(cmd, shell=True)
+    subprocess.run(f"rm {filename}.tempHeader", shell=True)
 
 
 def main_druid():
@@ -117,6 +106,7 @@ def main_druid():
     parser.add_argument('--clean_temporary_files', type=bool, default=True)
     # parser.add_argument('--feature', dest='clean_temporary_files', action='store_true')
     parser.add_argument('--no_clean_temporary_files', dest='clean_temporary_files', action='store_false')
+    parser.add_argument('--verbose', dest='verbose', action='store_true', type=bool, default=False)
 
     args = parser.parse_args()
     # conf_file = None
@@ -127,6 +117,7 @@ def main_druid():
     templateParam = args.templateParam
     resultsdir = args.resultsdir
     GATKthreads = args.GATKthreads
+    verbose = args.verbose
     clean_temporary_files = args.clean_temporary_files
 
     if args.templateParam:
@@ -236,7 +227,7 @@ def main_druid():
         print("\t +++ INFO: Preprocessing BAM file")
 
         if not os.path.exists(f"{BAM_file}.clean.BAM") or not os.path.exists(f"{BAM_file}.clean.BAM.bai"):
-            cleanBAMfile_noCHR(BAM_file)
+            cleanBAMfile_noCHR(BAM_file, verbose=verbose)
 
         BAM_file = f"{BAM_file}.clean.BAM"
 
@@ -301,7 +292,6 @@ def main_druid():
         os.chdir(cwd)
 
     run_latex()
-
 
     if clean_temporary_files is True:
         print("\t +++ INFO: Cleaning up Temporary and Intermediate Files")
