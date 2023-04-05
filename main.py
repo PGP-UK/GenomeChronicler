@@ -106,7 +106,7 @@ def main_druid():
     parser.add_argument('--clean_temporary_files', type=bool, default=True)
     # parser.add_argument('--feature', dest='clean_temporary_files', action='store_true')
     parser.add_argument('--no_clean_temporary_files', dest='clean_temporary_files', action='store_false')
-    parser.add_argument('--verbose', dest='verbose', action='store_true', type=bool, default=False)
+    parser.add_argument('--verbose', dest='verbose', type=bool, default=False)
 
     args = parser.parse_args()
     # conf_file = None
