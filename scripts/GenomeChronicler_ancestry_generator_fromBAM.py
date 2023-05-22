@@ -8,8 +8,17 @@ from os.path import basename
 from pathlib import Path
 import fire
 
-# get list of SNPs from 1kGP
 def _get_list_of_snps_from_1kGP(initialBIM, sample, resultsdir, hasCHRflag, bgzip, tabix):
+    """
+    Get list of SNPs from 1kGP
+
+    Input files:
+        - initialBIM = f"{dir}reference/1kGP_GRCh38_exome.bim"
+    Output files:
+        - f"{dir}temp/1kGP_GRCh38_nonAT_CG.bed.gz"
+        - f"{dir}temp/1kGP_GRCh38_nonAT_CG.bed.gz.tbi"
+
+    """
     output_path = f"{resultsdir}/temp/1kGP_GRCh38_nonAT_CG.bed"
     if Path(output_path).exists():
         return
@@ -36,35 +45,71 @@ def _get_list_of_snps_from_1kGP(initialBIM, sample, resultsdir, hasCHRflag, bgzi
     os.system(f"{tabix} -p bed {resultsdir}/temp/1kGP_GRCh38_nonAT_CG.bed.gz")
 
 
-# convert BAM to a gvcf that contains only the 1kgp snps filtered above
 def _get_gvcf(bam, resultsdir, sample, gatk, ref_hs38, numThreads, bcftools, bgzip):
+    """
+    Convert BAM to a gvcf that contains only the 1kgp snps filtered above
+
+    Input files:
+        - f"{dir}bam/{sample}.bam"
+        - {tmp_dir}/1kGP_GRCh38_nonAT_CG.bed
+
+        - {ref_hs38}
+
+    Output files:
+        - f"{dir}temp/{sample}.g.vcf"
+        - f"{dir}temp/{sample}.genotypes.vcf"
+        - f"{dir}temp/{sample}.rsIDs.gvcf.gz"
+
+    """
     tmp_dir = f"{resultsdir}/temp"
-    output_path = f"{tmp_dir}/{sample}.rsIDs.gvcf.gz"
-    if Path(output_path).exists():
-        return
-    runstr = f"java -Xmx40g -Djava.io.tmpdir={tmp_dir}/tmpdir -jar {gatk}"
-    runstr += f" -T HaplotypeCaller -R {ref_hs38}"
-    runstr += f" -I {bam} -nct {numThreads}"
-    runstr += f" --emitRefConfidence GVCF -L {tmp_dir}/1kGP_GRCh38_nonAT_CG.bed"
-    runstr += f" -o {tmp_dir}/{sample}.g.vcf"
-    os.system(runstr)
-    runstr2 = f"java -Xmx40g -Djava.io.tmpdir={tmp_dir}/tmpdir -jar {gatk}"
-    runstr2 += f" -T GenotypeGVCFs -R {ref_hs38}"
-    runstr2 += f" --variant {tmp_dir}/{sample}.g.vcf"
-    runstr2 += f" -allSites -o {tmp_dir}/{sample}.genotypes.vcf"
-    runstr2 += " -stand_emit_conf 10 -stand_call_conf 30"
-    os.system(runstr2)
-    os.system(f"cat {tmp_dir}/{sample}.genotypes.vcf | {bcftools} annotate -a {tmp_dir}/1kGP_GRCh38_nonAT_CG.bed.gz -c CHROM,-,POS,ID | {bgzip} -c > {tmp_dir}/{sample}.rsIDs.gvcf.gz")
+
+    output_g_path = f"{tmp_dir}/{sample}.ancestry.g.vcf"
+    if not Path(output_g_path).exists():
+        runstr = f"java -Xmx40g -Djava.io.tmpdir={tmp_dir}/tmpdir -jar {gatk}"
+        runstr += f" -T HaplotypeCaller -R {ref_hs38}"
+        runstr += f" -I {bam} -nct {numThreads}"
+        runstr += f" --emitRefConfidence GVCF -L {tmp_dir}/1kGP_GRCh38_nonAT_CG.bed"
+        runstr += f" -o {output_g_path}"
+        os.system(runstr)
+
+    output_genotypes_path = f"{tmp_dir}/{sample}.ancestry.genotypes.vcf"
+    if not Path(output_genotypes_path).exists():
+        # return
+        runstr2 = f"java -Xmx40g -Djava.io.tmpdir={tmp_dir}/tmpdir -jar {gatk}"
+        runstr2 += f" -T GenotypeGVCFs -R {ref_hs38}"
+        runstr2 += f" --variant {output_g_path}"
+        runstr2 += f" -allSites -o {output_genotypes_path}"
+        runstr2 += " -stand_emit_conf 10 -stand_call_conf 30"
+        os.system(runstr2)
+
+    output_path = f"{tmp_dir}/{sample}.ancestry.rsIDs.gvcf.gz"
+    if not Path(output_path).exists():
+        os.system(f"cat {output_genotypes_path} | {bcftools} annotate -a {tmp_dir}/1kGP_GRCh38_nonAT_CG.bed.gz -c CHROM,-,POS,ID | {bgzip} -c > {output_path}")
 
 
 def _gvcf_to_plink(plink, resultsdir, sample):
+    """
+    Convert gvcf to plink files (bed, bim, fam)
+
+    Input files:
+        - {tmp_dir}/{sample}.ancestry.rsIDs.gvcf.gz
+
+    Output files:
+        - {tmp_dir}/{sample}.bed
+        - {tmp_dir}/{sample}.bim
+        - {tmp_dir}/{sample}.fam
+        - {tmp_dir}/{sample}.fam.mod
+        - {tmp_dir}/{sample}.log (update)
+        - {tmp_dir}/{sample}.nosex
+
+    """
     tmp_dir = f"{resultsdir}/temp"
     output_path = f"{tmp_dir}/{sample}.fam"
     if Path(output_path).exists():
         return
-    # convert gvcf to plink
+    # convert gvcf to plink (generate bed, bim, fam)
     runstr1q = f"{plink} --biallelic-only --vcf-require-gt"
-    runstr1q += f" --vcf {tmp_dir}/{sample}.rsIDs.gvcf.gz"
+    runstr1q += f" --vcf {tmp_dir}/{sample}.ancestry.rsIDs.gvcf.gz"
     runstr1q += f" --out {tmp_dir}/{sample}"
     runstr1q += " --allow-extra-chr --make-bed --double-id"
     subprocess.run(runstr1q, shell=True)
@@ -77,54 +122,81 @@ def _gvcf_to_plink(plink, resultsdir, sample):
     cmd2 = f"awk '{{ $2 = \"{sample}\"; print }}' {tmp_dir}/{sample}.fam.mod > {tmp_dir}/{sample}.fam"
     subprocess.run(cmd2, shell=True)
 
-# def _gvcf_to_plink(plink, resultsdir, sample):
-#     tmp_dir = f"{resultsdir}/temp"
-#     # Convert gvcf to plink
-#     runstr1q = f"{plink} --biallelic-only --vcf-require-gt --vcf {tmp_dir}/{sample}.rsIDs.gvcf.gz --out {tmp_dir}/{sample} --allow-extra-chr --make-bed --double-id"
-#     os.system(runstr1q)
-    
-#     # Change sample names to avoid errors and inconsistencies
-#     cmd = f"awk '{{\$1 = \"{sample}\"; print}}' {tmp_dir}/{sample}.fam  > {tmp_dir}/{sample}.fam.mod"
-#     os.system(cmd)
-#     cmd2 = f"awk '{{\$2 = \"{sample}\"; print}}' {tmp_dir}/{sample}.fam.mod  > {tmp_dir}/{sample}.fam"
-#     os.system(cmd2)
-
 
 def _merge_pgp_1kGP(plink, resultsdir, sample, initialAnc):
+    """
+    Merge the pgp and 1kGP files and get the SNPs that disagree between datasets
+    - Four groups of files are generated:
+
+    Input files:
+        - {tmp_dir}/{sample}.bed
+        - {tmp_dir}/{sample}.bim
+        - {tmp_dir}/{sample}.fam
+        - {tmp_dir}/{sample}.fam.mod
+        - initialAnc f"{dir}reference/1kGP_GRCh38_exome"
+
+    Output files:
+        - {tmp_dir}/{sample}_1kGP_0 (-merge.missnp, -merge.fam, .log)
+        - {tmp_dir}/1kGP_2 (.bed, .bim, .fam, .log, .nosex)
+        - {tmp_dir}/{sample}_2 (.bed, .bim, .fam, .log, .nosex)
+        - {tmp_dir}/{sample}_1kGP (.bed, .bim, .fam, .log, .nosex)
+
+    """
     tmp_dir = f"{resultsdir}/temp"
     # output_path = f"{tmp_dir}/{sample}.fam"
     # if Path(output_path).exists():
     #     return
     # Merge the pgp and 1kGP files and get the SNPs that disagree between datasets
-    runstr3 = f"{plink} --bfile {tmp_dir}/{sample} --bmerge {initialAnc} --out {tmp_dir}/{sample}_1kGP_0 --geno 0 --allow-extra-chr --make-bed"
-    os.system(runstr3)
+    output_path = f"{tmp_dir}/{sample}_1kGP_0-merge.fam"
+    if not Path(output_path).exists():
+        runstr3 = f"{plink} --bfile {tmp_dir}/{sample} --bmerge {initialAnc} --out {tmp_dir}/{sample}_1kGP_0 --geno 0 --allow-extra-chr --make-bed"
+        os.system(runstr3)
     
     # Remove discarded SNPs from the pgp and 1kGP file
-    runstr1z = f"{plink} --bfile {initialAnc} --exclude {tmp_dir}/{sample}_1kGP_0-merge.missnp --out {tmp_dir}/1kGP_2 --make-bed --allow-extra-chr"
-    os.system(runstr1z)
-    runstr1z2 = f"{plink} --bfile {tmp_dir}/{sample} --exclude {tmp_dir}/{sample}_1kGP_0-merge.missnp --out {tmp_dir}/{sample}_2 --make-bed --allow-extra-chr"
-    os.system(runstr1z2)
+    output_path = f"{tmp_dir}/1kGP_2.bed"
+    if not Path(output_path).exists():
+        runstr1z = f"{plink} --bfile {initialAnc} --exclude {tmp_dir}/{sample}_1kGP_0-merge.missnp --out {tmp_dir}/1kGP_2 --make-bed --allow-extra-chr"
+        os.system(runstr1z)
+
+    output_path = f"{tmp_dir}/{sample}_2.bed"
+    if not Path(output_path).exists():
+        runstr1z2 = f"{plink} --bfile {tmp_dir}/{sample} --exclude {tmp_dir}/{sample}_1kGP_0-merge.missnp --out {tmp_dir}/{sample}_2 --make-bed --allow-extra-chr"
+        os.system(runstr1z2)
     
     # Merge the pgp and 1kGP files again
-    runstr3a = f"{plink} --bfile {tmp_dir}/{sample}_2 --bmerge {tmp_dir}/1kGP_2 --out {tmp_dir}/{sample}_1kGP --geno 0 --allow-extra-chr --make-bed"
-    os.system(runstr3a)
+    output_path = f"{tmp_dir}/{sample}_1kGP.bed"
+    if not Path(output_path).exists():
+        runstr3a = f"{plink} --bfile {tmp_dir}/{sample}_2 --bmerge {tmp_dir}/1kGP_2 --out {tmp_dir}/{sample}_1kGP --geno 0 --allow-extra-chr --make-bed"
+        os.system(runstr3a)
 
 
 def _subset_unlinked_snps(plink, resultsdir, sample):
+    """
+    Choose a subset of filtered and independent (unlinked) SNPs
+
+    Input files:
+        - {tmp_dir}/{sample}_1kGP*
+
+    Output files:
+        - {tmp_dir}/snps_to_prune (.log, .prune.in, .prune.out, .nosex)
+        - {tmp_dir}/{sample}_1kGP_pruned (.bed, .bim, .fam, .log, .nosex)
+
+    """
     tmp_dir = f"{resultsdir}/temp"
-    output_path = f"{tmp_dir}/{sample}_1kGP_pruned.bed"
-    if Path(output_path).exists():
-        return
-    
+
     # Choose a subset of filtered and independent (unlinked) SNPs
-    
+
     # Select a subgroup of unlinked SNPs, by pruning those with r2 > 0.1 using 100-SNP windows shifted at 5-SNP intervals.
-    runstr4 = f"{plink} --bfile {tmp_dir}/{sample}_1kGP --out {tmp_dir}/snps_to_prune --indep-pairwise 100 5 0.1"
-    os.system(runstr4)
-    
+    output_path = f"{tmp_dir}/snps_to_prune.prune.in"
+    if not Path(output_path).exists():
+        runstr4 = f"{plink} --bfile {tmp_dir}/{sample}_1kGP --out {tmp_dir}/snps_to_prune --indep-pairwise 100 5 0.1"
+        os.system(runstr4)
+
     # Remove the pruned SNPs from the dataset and set the missingness threshold to 0.1
-    runstr5 = f"{plink} --bfile {tmp_dir}/{sample}_1kGP --out {tmp_dir}/{sample}_1kGP_pruned --extract {tmp_dir}/snps_to_prune.prune.in --make-bed --mind 0.1"
-    os.system(runstr5)
+    output_path = f"{tmp_dir}/{sample}_1kGP_pruned.bed"
+    if not Path(output_path).exists():
+        runstr5 = f"{plink} --bfile {tmp_dir}/{sample}_1kGP --out {tmp_dir}/{sample}_1kGP_pruned --extract {tmp_dir}/snps_to_prune.prune.in --make-bed --mind 0.1"
+        os.system(runstr5)
 
 
 def ancestry_generator_from_BAM(bam, resultsdir="", numThreads=4,
@@ -203,8 +275,6 @@ def ancestry_generator_from_BAM(bam, resultsdir="", numThreads=4,
 
     # _merge_pgp_1kGP()
     _merge_pgp_1kGP(plink, resultsdir, sample, initialAnc)
-    # print('test')
-    # exit()
 
     # ------------------------------------------
     # -- Reduce the merged dataset further by removing SPs in LD
@@ -217,13 +287,12 @@ def ancestry_generator_from_BAM(bam, resultsdir="", numThreads=4,
     # ------------------------------------------
     tmp_dir = f"{resultsdir}/temp"
     output_path = f"{tmp_dir}/{sample}_1kGP_pruned_pca_20.eigenvec"
-    if Path(output_path).exists():
-        return
-    runstr6 = f"{plink}"
-    runstr6 += f" --bfile {tmp_dir}/{sample}_1kGP_pruned"
-    runstr6 += f" --out {tmp_dir}/{sample}_1kGP_pruned_pca_20"
-    runstr6 += " --pca"
-    subprocess.run(runstr6, shell=True)
+    if not Path(output_path).exists():
+        runstr6 = f"{plink}"
+        runstr6 += f" --bfile {tmp_dir}/{sample}_1kGP_pruned"
+        runstr6 += f" --out {tmp_dir}/{sample}_1kGP_pruned_pca_20"
+        runstr6 += " --pca"
+        subprocess.run(runstr6, shell=True)
 
 
 if __name__ == '__main__':
