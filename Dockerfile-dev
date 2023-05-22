@@ -18,7 +18,6 @@ RUN apt-get update \
         tk-dev \
         mesa-common-dev \
         libhts-dev \
-        libglu1-mesa-dev \
     && add-apt-repository ppa:linuxuprising/java \
     && apt-get install -y openjdk-8-jdk
 
@@ -56,11 +55,16 @@ RUN wget https://github.com/samtools/bcftools/releases/download/1.16/bcftools-1.
     && tar -xjf bcftools-1.16.tar.bz2 && rm bcftools-1.16.tar.bz2 \
     && cd bcftools-1.16 && ./configure && make && make install
 
+
+# RUN cd /GenomeChronicler && wget https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/reference.tar.gz -O - | tar -zxvf
+
+# RUN cd /GenomeChronicler && wget https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz -O - | \
+#     tar zxvf - software.linux && mv software.linux software
+
+RUN apt update && apt-get install -y python3 python3-pip 
+RUN pip3 install fire==0.5.0 pandas==1.5.3 xlsxwriter==3.0.9 tqdm==4.65.0 matplotlib==3.7.1 seaborn==0.12.2
+
 WORKDIR /GenomeChronicler
 
-RUN wget https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/reference.tar.gz -O - | tar -zxvf -
-
-RUN wget https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz -O - | \
-    tar zxvf - software.linux && mv software.linux software
-
 ENV PATH "$PATH:/GenomeChronicler/scripts"
+
