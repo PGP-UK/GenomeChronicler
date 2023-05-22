@@ -32,7 +32,7 @@ def cleanBAMfile_noCHR(filename, verbose=False):
     with subprocess.Popen(["samtools", "view", "-H", filename], stdout=subprocess.PIPE, text=True) as proc:
         # Write the modified header lines to a temporary file
         with open(f"{filename}.tempHeader", "w") as temp_header_file:
-            for line in tqdm(proc.stdout, verbose=verbose, desc="Cleaning BAM file"):
+            for line in tqdm(proc.stdout, disable=not verbose, desc="Cleaning BAM file"):
                 line = line.strip()
                 if not line:
                     continue
@@ -48,23 +48,7 @@ def cleanBAMfile_noCHR(filename, verbose=False):
     subprocess.run(f"rm {filename}.tempHeader", shell=True)
 
 
-def main_druid():
-    import os
-
-    ### Processing Needed steps ###
-
-    ################### parameters
-    dir = ""
-    if "SINGULARITY_NAME" in os.environ:
-        dir = "/GenomeChronicler/"
-
-    resultsdir = os.getcwd()
-    template_withVEP = f"{dir}templates/reportTemplate_withVEP.tex"
-    template_ohneVEP = f"{dir}templates/reportTemplate_ohneVEP.tex"
-    template = template_ohneVEP
-
-    # Defining input options and their default values...
-
+def get_parser():
     parser = argparse.ArgumentParser(description="GenomeChronicler")
     parser.add_argument('-d', '--debug', action='store_true', help='Debug flag')
     # parser.add_argument('-h', '--help', action='help', help='Help/usage')
@@ -103,12 +87,31 @@ def main_druid():
     parser.add_argument('--threads', '--GATKthreads', '-t', dest='GATKthreads', type=int, default=1, help="""
                         [OPTIONAL] Number of threads to use for the GATK genotyping steps of this
                         processing pipeline.""")
-    parser.add_argument('--clean_temporary_files', type=bool, default=True)
+    # parser.add_argument('--clean_temporary_files', type=bool, default=True)
     # parser.add_argument('--feature', dest='clean_temporary_files', action='store_true')
-    parser.add_argument('--no_clean_temporary_files', dest='clean_temporary_files', action='store_false')
+    parser.add_argument('--no_clean_temporary_files', default=False, dest='no_clean_temporary_files', action='store_true')
     parser.add_argument('--verbose', dest='verbose', type=bool, default=False)
+    return parser
 
+def main_druid():
+    import os
+
+    ### Processing Needed steps ###
+
+    ################### parameters
+    dir = ""
+    if "SINGULARITY_NAME" in os.environ:
+        dir = "/GenomeChronicler/"
+
+    resultsdir = os.getcwd()
+    template_withVEP = f"{dir}templates/reportTemplate_withVEP.tex"
+    template_ohneVEP = f"{dir}templates/reportTemplate_ohneVEP.tex"
+    template = template_ohneVEP
+
+    # Defining input options and their default values...
+    parser = get_parser()
     args = parser.parse_args()
+
     # conf_file = None
     debugFlag = args.debug
     BAM_file = args.BAM_file
@@ -118,7 +121,8 @@ def main_druid():
     resultsdir = args.resultsdir
     GATKthreads = args.GATKthreads
     verbose = args.verbose
-    clean_temporary_files = args.clean_temporary_files
+    no_clean_temporary_files = args.no_clean_temporary_files
+
 
     if args.templateParam:
         template = args.templateParam
@@ -234,8 +238,12 @@ def main_druid():
         print("\t +++ INFO: Generating Ancestry")
         cmd = f"python3 {dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.py {BAM_file} {output_sample_dir}/ {GATKthreads} 2>> {LOGFILE2}"
         subprocess.run(cmd, shell=True)
-        cmd = f"SAMPLE={sample} ID={sample} DIR={resultsdir} R CMD BATCH {dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R"
-        subprocess.run(cmd, shell=True)
+
+        print("\t +++ INFO: Generating Ancestry Plots")
+        output_path = f"{output_sample_dir}/AncestryPlot.pdf"
+        if not Path(output_path).exists():
+            cmd = f"SAMPLE={sample} ID={sample} DIR={resultsdir} R CMD BATCH {dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R"
+            subprocess.run(cmd, shell=True)
 
         print("\t +++ INFO: Generating Genotypes Files")
         cmd = f"python3 {dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.py {BAM_file} {output_sample_dir}/ {GATKthreads} 2>> {LOGFILE2}"
@@ -293,7 +301,7 @@ def main_druid():
 
     run_latex()
 
-    if clean_temporary_files is True:
+    if no_clean_temporary_files is False:
         print("\t +++ INFO: Cleaning up Temporary and Intermediate Files")
         if BAM_file is not None:
             os.remove(BAM_file)
