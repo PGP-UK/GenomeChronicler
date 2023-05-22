@@ -29,23 +29,13 @@ def print_header_ascii():
 
 
 def cleanBAMfile_noCHR(filename, verbose=False):
-    with subprocess.Popen(["samtools", "view", "-H", filename], stdout=subprocess.PIPE, text=True) as proc:
-        # Write the modified header lines to a temporary file
-        with open(f"{filename}.tempHeader", "w") as temp_header_file:
-            for line in tqdm(proc.stdout, disable=not verbose, desc="Cleaning BAM file"):
-                line = line.strip()
-                if not line:
-                    continue
-
-                line = line.replace("SQ\tSN:chr", "SQ\tSN:")
-                temp_header_file.write(f"{line}\n")
-
     # Reheader the BAM file and create an index
-    subprocess.run(f"samtools reheader {filename}.tempHeader {filename} > {filename}.clean.BAM", shell=True)
-    subprocess.run(f"samtools index {filename}.clean.BAM", shell=True)
+    subprocess.run(
+        f"samtools reheader -c 'perl -pe \"s/^(@SQ.*)(\tSN:)chr/\$1\$2/\"' {filename} > {filename}.clean.BAM",
+        shell=True)
 
-    # Remove the temporary header file
-    subprocess.run(f"rm {filename}.tempHeader", shell=True)
+    print(f"\t +++ INFO: Indexing the BAM file")
+    subprocess.run(f"samtools index -@ 6 {filename}.clean.BAM", shell=True)
 
 
 def get_parser():
