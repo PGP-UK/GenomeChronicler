@@ -66,6 +66,9 @@ RUN wget -O - https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/
 RUN wget -O - https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz | \
     tar zxvf - software.linux && mv software.linux software
 
+RUN apt update && apt-get install -y python3 python3-pip
+RUN pip3 install fire==0.5.0 pandas==1.5.3 xlsxwriter==3.0.9 tqdm==4.65.0 matplotlib==3.7.1 seaborn==0.12.2
+
 ENV PATH "$PATH:/GenomeChronicler/scripts"
 
 CMD /GenomeChronicler/scripts/genomechronicler
