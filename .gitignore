@@ -32,3 +32,5 @@ reference.tar.gz
 /testData/
 /perl/
 /output/
+
+.RData
