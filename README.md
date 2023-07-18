@@ -77,6 +77,10 @@ docker run -v $PWD:/d/ genomechronicler samtools view -@ 8 -T /d/hg38.fa -b -o /
 Running GenomeChronicler on the data
 
 ```bash
+# With a GVCF
+docker run -v $PWD:/d/ genomechronicler genomechronicler --vcfFile=/GenomeChronicler/NA12878wxs.g.vcf --resultsDir /GenomeChronicler/out2 --GATKthreads 8
+
+# With a BAM
 docker run -v $PWD:/d/ genomechronicler genomechronicler --bamFile=/d/NA12878wxs.bam --resultsDir /d/out --GATKthreads 8
 ```
 
