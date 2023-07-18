@@ -20,3 +20,15 @@ reference.tar.gz
 *vcf
 *gz
 *fai
+
+.DS_Store
+.idea/
+/data/
+/reference/
+/templates/
+/tests_temp/
+/tests_data/
+/software/
+/testData/
+/perl/
+/output/

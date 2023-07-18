@@ -280,7 +280,7 @@ if(defined($VEP_file)) {
 	$template = $template_withVEP if(!defined($templateParam));
 
 	print STDERR "\t +++ INFO: Preprocessing VEP file\n";
-	system("perl ${dir}scripts/GenomeChronicler_vepTables_fromVEP.pl $VEP_file ${resultsdir}/results/results_${sample}/");
+	system("python3 ${dir}scripts/GenomeChronicler_vepTables_fromVEP.py $VEP_file ${resultsdir}/results/results_${sample}/");
 
 }
 
@@ -304,14 +304,14 @@ if(defined($BAM_file)) {
 
 	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.py $BAM_file $resultsdir/results/results_${sample}/ $GATKthreads 2>>$LOGFILE2");
 	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
 
 	##################### Use the BAM to call the genotypes on the needed positions for this
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.pl $BAM_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.py $BAM_file $resultsdir/results/results_${sample}/ $GATKthreads 2>>$LOGFILE2");
 	$AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
@@ -327,12 +327,12 @@ elsif(defined($gVCF_file)) {
 
 	print STDERR "\t +++ INFO: Generating Ancestry\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
-	system("SAMPLE=$sample ID=$sample DIR=$resultsdir R CMD BATCH ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R");
+	system("python3 ${dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.py $gVCF_file $resultsdir/results/results_${sample}/ $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_plot_generator_fromAncestry.py $sample/results/results_${sample}/temp/${sample}_1kGP_pruned_pca_20.eigenvec $sample $resultsdir/results/results_${sample}/");
 
 	print STDERR "\t +++ INFO: Generating Genotypes Files\n";
 
-	system("perl ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.pl $gVCF_file $resultsdir $GATKthreads 2>>$LOGFILE2");
+	system("python3 ${dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.py $gVCF_file $resultsdir/results/results_${sample}/ 2>>$LOGFILE2");
 	$AFOgeno_file = "${resultsdir}/results/results_${sample}/temp/${sample}.afogeno38.txt";
 
 }
@@ -342,28 +342,27 @@ else {
 }
 
 
-##################### Use the generated genotypes file to produce the report tables by linking with the databases
+#################### Use the generated genotypes file to produce the report tables by linking with the databases
 
 print STDERR "\t +++ INFO: Generating Genome Report Tables\n";
 
-system("perl ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.pl $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
+system("python3 ${dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.py $AFOgeno_file ${resultsdir}/results/results_${sample}/ 2>>$LOGFILE2");
 
 
-##################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
+#################### Table filtering for variants that have 0 magnitude and/or are unsupported by external links.
 
 
 print STDERR "\t +++ INFO: Filtering Report Tables\n";
 
-system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
-system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
-#system("perl ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.pl ${resultsdir}/results/results_${sample}/latest.genoset.reportTable.csv");
+system("python3 ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.py ${resultsdir}/results/results_${sample}/latest.good.reportTable.csv");
+system("python3 ${dir}scripts/GenomeChronicler_quickFilterFinalReportTables.py ${resultsdir}/results/results_${sample}/latest.bad.reportTable.csv");
 
 
 ##################### Call script to summarise found phenotypes as XLS spreadsheet
 
 print STDERR "\t +++ INFO: Combining Excel Tables\n";
 
-system("perl ${dir}scripts/GenomeChronicler_XLSX_fromTables.pl ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
+system("python3 ${dir}scripts/GenomeChronicler_XLSX_fromTables.py ${resultsdir}/results/results_${sample}/ ${resultsdir}/results/results_${sample}/${sample}_genotypes_${dtag}.xlsx");
 
 
 ##################### Call LaTeX on the right template to produce the final report
@@ -386,13 +385,15 @@ sub runLatex {
 	}
 }
 
-##################### Clean up temp files, both in the results folder and in the potentially extraneous tables produced for the report
+# ##################### Clean up temp files, both in the results folder and in the potentially extraneous tables produced for the report
 
 print STDERR "\t +++ INFO: Cleaning up Temporary and Intermediate Files\n";
 
 #note to self: maybe there will not be a BAM file if we are using a VCF file
 
-system("rm -rf $BAM_file ${BAM_file}.bai");
+if(defined($BAM_file)) {
+	system("rm -rf $BAM_file ${BAM_file}.bai");
+}
 system("rm -rf ${resultsdir}/results/results_${sample}/temp/");
 system("rm -rf ${resultsdir}/results/results_${sample}/latest*.csv");
 system("rm -rf ${resultsdir}/results/results_${sample}/versionTable.txt ${resultsdir}/results/results_${sample}/GeneStructure.pdf");
@@ -400,13 +401,10 @@ system("rm -rf ${resultsdir}/results/results_${sample}/${TEMPLATETEX}.out ${resu
 system("rm -rf ${dir}GenomeChronicler_plot_generator_fromAncestry.Rout");
 
 sleep (1);
-
-$BAM_file =~ s/\.clean\.BAM//gi;
-print STDERR "\n\t +++ DONE: Finished GenomeChronicler for file [ $BAM_file ] in ".( time() - $start_time )." seconds\n";
-
-
-
-
+if(defined($BAM_file)) {
+	$BAM_file =~ s/\.clean\.BAM//gi;
+	print STDERR "\n\t +++ DONE: Finished GenomeChronicler for file [ $BAM_file ] in ".( time() - $start_time )." seconds\n";
+}
 
 
 sub cleanBAMfile_noCHR() {
