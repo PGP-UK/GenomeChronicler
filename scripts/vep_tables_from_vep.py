@@ -1,39 +1,29 @@
 #!/usr/bin/env python3
-
-import subprocess
-import sys
+import os
 import re
+import subprocess
 from pathlib import Path
 
 import fire
 
-def ucfirst(s):
-    if len(s) > 0:
-        return s[0].upper() + s[1:]
-    else:
-        return s
+if __name__ == '__main__':
+    import sys
+    sys.path.append(os.path.abspath(os.getcwd()))
 
-def get_vepTables_from_VEP(filename, out_dir="."):
+from scripts.utils import ucfirst
 
-    # # Sort out input
-    # if len(sys.argv) != 3:
-    #     sys.exit("Usage: {} VEPhtml OutputDir".format(sys.argv[0]))
 
-    # filename = sys.argv[1]
-    # out_dir = sys.argv[2]
+def get_vep_tables_from_vep(vep_path, output_dir):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # if not os.path.exists(filename):
-    #     sys.exit("Major error here (File not found)")
-
-    out_file = open("{}/latest.summary.csv".format(out_dir), "w")
+    out_file = open(f"{output_dir}/latest.summary.csv", "w")
     out_file.write("Feature\tCount\n")
 
     recording = 0
-    # with (filename, "r") as in_file:
-    with subprocess.Popen(f'cat {filename} | grep "gen_stats"', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+    with subprocess.Popen(f'cat {vep_path} | grep "gen_stats"', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
         for line in proc.stdout:
             line = line.decode()
-            # line = line.strip()
             line = line.rstrip("\n")
             if not line:
                 continue
@@ -70,7 +60,7 @@ def get_vepTables_from_VEP(filename, out_dir="."):
     # in_file.close()
     out_file.close()
 
-    with open(filename, "r") as in_file:
+    with open(vep_path, "r") as in_file:
         for line in in_file:
             line = line.strip()
             if not line or "drawTable" not in line or "[" not in line:
@@ -97,7 +87,7 @@ def get_vepTables_from_VEP(filename, out_dir="."):
 
                     counter += 1
 
-                out_file = open("{}/latest.{}.csv".format(out_dir, tab_name), "w")
+                out_file = open("{}/latest.{}.csv".format(output_dir, tab_name), "w")
 
                 head = table.pop(0)
                 head[0] = "Label"
@@ -121,4 +111,4 @@ def get_vepTables_from_VEP(filename, out_dir="."):
 
 
 if __name__ == '__main__':
-    fire.Fire(get_vepTables_from_VEP)
+    fire.Fire(get_vep_tables_from_vep)

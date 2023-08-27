@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
 
 import argparse
-import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-import shutil
-import time
-import os
 
-from tqdm import tqdm
+from scripts.afogeno_generator import generate_afogeno_pipeline
+from scripts.ancestry_generator import generate_ancestry_pipeline
+from scripts.genotables_from_afogeno import geno_tables_from_afogeno
+from scripts.io import render_latex, export_genotypes_xlsx_from_csvs
+from scripts.plot_generator_fromAncestry import plot_generator_from_ancestry
+from scripts.utils import clean_bam_file_noCHR
+from scripts.vep_tables_from_vep import get_vep_tables_from_vep
+
+def check_path_exist(path, file_type,
+                     error_template="--- ERROR: The {file_type} specified in the command line wasn't found [{"
+                                    "path}], please check the provided path and try again ---\n",
+                     exit_code=404):
+    if path and not Path(path).exists():
+        print(error_template.format(file_type=file_type, path=path), file=sys.stderr)
+        sys.exit(exit_code)
 
 
 def print_header_ascii():
@@ -26,16 +37,6 @@ def print_header_ascii():
 \tCopyright(C) 2016-2022 Jose Afonso Guerra-Assuncao et al @ Personal Genome Project - United Kingdom
 \tSee also: https://www.personalgenomes.org.uk
 """)
-
-
-def cleanBAMfile_noCHR(filename, verbose=False):
-    # Reheader the BAM file and create an index
-    subprocess.run(
-        f"samtools reheader -c 'perl -pe \"s/^(@SQ.*)(\tSN:)chr/\$1\$2/\"' {filename} > {filename}.clean.BAM",
-        shell=True)
-
-    print(f"\t +++ INFO: Indexing the BAM file")
-    subprocess.run(f"samtools index -@ 6 {filename}.clean.BAM", shell=True)
 
 
 def get_parser():
@@ -83,7 +84,7 @@ def get_parser():
     parser.add_argument('--verbose', dest='verbose', type=bool, default=False)
     return parser
 
-def main_druid():
+def main():
     import os
 
     ### Processing Needed steps ###
@@ -94,9 +95,6 @@ def main_druid():
         dir = "/GenomeChronicler/"
 
     resultsdir = os.getcwd()
-    template_withVEP = f"{dir}templates/reportTemplate_withVEP.tex"
-    template_ohneVEP = f"{dir}templates/reportTemplate_ohneVEP.tex"
-    template = template_ohneVEP
 
     # Defining input options and their default values...
     parser = get_parser()
@@ -124,15 +122,6 @@ def main_druid():
     start_time = datetime.now()
 
     ##################### check file existence and proceed
-
-    def check_path_exist(path, file_type,
-                         error_template="--- ERROR: The {file_type} specified in the command line wasn't found [{"
-                                        "path}], please check the provided path and try again ---\n",
-                         exit_code=404):
-        if path and not Path(path).exists():
-            print(error_template.format(file_type=file_type, path=path), file=sys.stderr)
-            sys.exit(exit_code)
-
     if BAM_file:
         check_path_exist(BAM_file, "BAM file", exit_code=404)
     elif gVCF_file:
@@ -151,7 +140,6 @@ def main_druid():
     check_path_exist(templateParam, "LaTeX Template file", exit_code=501)
 
     sample = None
-    import os
     if BAM_file:
         sample = Path(BAM_file).name.split('.')[0]
         # sample = os.path.splitext(os.path.basename(BAM_file))[0]
@@ -169,153 +157,125 @@ def main_druid():
               file=sys.stderr)
         sys.exit(555)
 
-    output_sample_dir = f"{resultsdir}/results/results_{sample}"
-    temp_dir = f"{output_sample_dir}/temp"
+    output_dir = Path(resultsdir)
+    temp_dir = output_dir/"temp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-    os.system(f"mkdir -p {temp_dir}")
-    check_path_exist(temp_dir, "Results directory", exit_code=102,
-                     error_template="\t --- ERROR: Results directory [{path}] can't be found and could not be "
-                                    "created. Please check permissions and try again ---\n")
+    # os.system(f"mkdir -p {temp_dir}")
+    # check_path_exist(temp_dir, "Results directory", exit_code=102,
+    #                  error_template="\t --- ERROR: Results directory [{path}] can't be found and could not be "
+    #                                 "created. Please check permissions and try again ---\n")
 
-    LOGFILE2 = f"{output_sample_dir}/{sample}.processingLog.stderr.txt"
-
-    # Dump parameters
-    if debugFlag:
-        print(f"SCRIPT = {scriptName}", file=sys.stderr)
-        print(f"DEBUG = {debugFlag}", file=sys.stderr)
-        print(f"BAM = {BAM_file}", file=sys.stderr)
-        print(f"VCF = {gVCF_file}", file=sys.stderr)
-        print(f"VEP = {VEP_file}\n", file=sys.stderr)
-        print(f"GATKthreads = {GATKthreads}\n\n", file=sys.stderr)
-
-        print(f"TEMPLATE = {template}", file=sys.stderr)
-        print(f"SAMPLE = {sample}", file=sys.stderr)
-        print(f"DIR = {dir}", file=sys.stderr)
-        print(f"TMPDIR = {temp_dir}\n", file=sys.stderr)
-        #  print(f"LOGFILE1 = {LOGFILE1}\n", file=sys.stderr)
-        print(f"LOGFILE2 = {LOGFILE2}\n\n", file=sys.stderr)
-
-        sys.exit(0)
+    LOGFILE2 = f"{output_dir}/{sample}.processingLog.stderr.txt"
 
     # Main bit of code
     print_header_ascii()
-
     print(f"\t +++ INFO: Starting Processing at {start_time.strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     print(f"\t +++ INFO: Opening Log File at: {LOGFILE2}", file=sys.stderr)
 
     subprocess.run(f"echo > {LOGFILE2}", shell=True)
 
-    clean_sample = sample.replace("_", "\\_")
-
-    with open(f"{output_sample_dir}/SampleName.txt", "w") as sample_name_file:
-        sample_name_file.write(clean_sample)
-
+    output_vep_dir = None
     if VEP_file:
-        template = template_withVEP if not templateParam else templateParam
-
         print("\t +++ INFO: Preprocessing VEP file")
-        cmd = f"python3 {dir}scripts/GenomeChronicler_vepTables_fromVEP.py {VEP_file} {output_sample_dir}/"
-        subprocess.run(cmd, shell=True)
+        output_vep_dir = output_dir/"vep_dir"
+        get_vep_tables_from_vep(VEP_file, output_vep_dir)
 
     if BAM_file:
         print("\t +++ INFO: Preprocessing BAM file")
 
-        if not os.path.exists(f"{BAM_file}.clean.BAM") or not os.path.exists(f"{BAM_file}.clean.BAM.bai"):
-            cleanBAMfile_noCHR(BAM_file, verbose=verbose)
+        output_path = temp_dir/f"{sample}.clean.BAM"
+        if not output_path.exists():
+            clean_bam_file_noCHR(BAM_file, temp_dir)
 
-        BAM_file = f"{BAM_file}.clean.BAM"
-
-        print("\t +++ INFO: Generating Ancestry")
-        cmd = f"python3 {dir}scripts/GenomeChronicler_ancestry_generator_fromBAM.py {BAM_file} {output_sample_dir}/ {GATKthreads} 2>> {LOGFILE2}"
-        subprocess.run(cmd, shell=True)
-
-        print("\t +++ INFO: Generating Ancestry Plots")
-        output_path = f"{output_sample_dir}/AncestryPlot.pdf"
-        if not Path(output_path).exists():
-            cmd = f"SAMPLE={sample} ID={sample} DIR={resultsdir} R CMD BATCH {dir}scripts/GenomeChronicler_plot_generator_fromAncestry.R"
-            subprocess.run(cmd, shell=True)
-
-        print("\t +++ INFO: Generating Genotypes Files")
-        cmd = f"python3 {dir}scripts/GenomeChronicler_afogeno_generator_fromBAM.py {BAM_file} {output_sample_dir}/ {GATKthreads} 2>> {LOGFILE2}"
-        subprocess.run(cmd, shell=True)
-        AFOgeno_file = f"{temp_dir}/{sample}.afogeno38.txt"
-
+        input_path = output_path
     elif gVCF_file:
         print("\t +++ INFO: Preprocessing VCF file")
-
-        print("\t +++ INFO: Generating Ancestry")
-        if not Path(f"{output_sample_dir}/{sample}.genotypingVCF.vcf.gz").exists():
-            cmd = f"python3 {dir}scripts/GenomeChronicler_ancestry_generator_fromVCF.py {gVCF_file} {sample} {output_sample_dir} 2>> {LOGFILE2}"
-            subprocess.run(cmd, shell=True)
-        # if not Path(f"{output_sample_dir}/{sample}.genotypingVCF.vcf.gz").exists():
-        cmd = f"python3 {dir}scripts/GenomeChronicler_plot_generator_fromAncestry.py {output_sample_dir}/temp/{sample}_1kGP_pruned_pca_20.eigenvec {sample} {output_sample_dir}/"
-        subprocess.run(cmd, shell=True)
-
-        print("\t +++ INFO: Generating Genotypes Files")
-        cmd = f"python3 {dir}scripts/GenomeChronicler_afogeno_generator_fromVCF.py {gVCF_file} {sample} {output_sample_dir} 2>> {LOGFILE2}"
-        subprocess.run(cmd, shell=True)
-        AFOgeno_file = f"{temp_dir}/{sample}.afogeno38.txt"
-
+        input_path = gVCF_file
     else:
         print("\t +++ ERROR: No BAM or VCF file provided. Exiting.")
         sys.exit()
 
-    print("\t +++ INFO: Generating Genome Report Tables")
-    if not Path(f"{output_sample_dir}/latest.good.reportTable.csv").exists():
-        cmd = f"python3 {dir}scripts/GenomeChronicler_genoTables_fromAfoGeno.py {AFOgeno_file} {output_sample_dir}/ 2>> {LOGFILE2}"
-        subprocess.run(cmd, shell=True)
+    print("\t +++ INFO: Generating Ancestry")
+    output_ancestry_dir = output_dir/"ancestry"
+    output_ancestry_path = output_ancestry_dir/'vcf_ancestry'/'ancestry.rsIDs.gvcf.gz'
+    if not output_ancestry_path.exists():
+        # cmd = f"python3 {dir}scripts/ancestry_generator.py ancestry_generator {BAM_file} {output_dir} {GATKthreads} 2>> {LOGFILE2}"
+        # subprocess.run(cmd, shell=True)
+        generate_ancestry_pipeline(input_path, output_ancestry_dir, GATKthreads)
 
-    print("\t +++ INFO: Filtering Report Tables")
-    cmd = f"python3 {dir}scripts/GenomeChronicler_quickFilterFinalReportTables.py {output_sample_dir}/latest.good.reportTable.csv"
-    subprocess.run(cmd, shell=True)
-    cmd = f"python3 {dir}scripts/GenomeChronicler_quickFilterFinalReportTables.py {output_sample_dir}/latest.bad.reportTable.csv"
-    subprocess.run(cmd, shell=True)
+    print("\t +++ INFO: Generating Ancestry Plots")
+    pca_eigenvec_path = f"{output_ancestry_dir}/pca_ancestry/1kGP_pruned_pca_20.eigenvec"
+    output_plot_path = f"{output_dir}/AncestryPlot.pdf"
+    if not Path(output_plot_path).exists():
+        # cmd = f"PCA_PATH={pca_eigenvec_path} ID={sample} OUTPUT_DIR={output_plot_path} R CMD BATCH {dir}scripts/plot_generator_fromAncestry.R"
+        # ret = subprocess.run(cmd, shell=True)
+        # print(ret)
+        plot_generator_from_ancestry(pca_eigenvec_path, sample, output_dir)
+        # exit()
+
+    print("\t +++ INFO: Generating Genotypes Files")
+    output_afogeno_dir = output_dir/"afogeno"
+    output_afogeno_path = output_ancestry_dir/'vcf_afogeno'/'afogeno.rsIDs.gvcf.gz'
+    afogeno_file = output_afogeno_dir/f"afogeno38.txt"
+    if not afogeno_file.exists():
+        # cmd = f"python3 {dir}scripts/ancestry_generator.py ancestry_generator {BAM_file} {output_dir} {GATKthreads} 2>> {LOGFILE2}"
+        # subprocess.run(cmd, shell=True)
+        generate_afogeno_pipeline(input_path, output_afogeno_dir, GATKthreads)
+
+    print("\t +++ INFO: Generating Genome Report Tables")
+    output_tables_dir = output_dir/"tables"
+    geno_tables_from_afogeno(afogeno_file, output_tables_dir)
+    for path in output_tables_dir.glob("*.csv"):
+        shutil.copy(path, output_dir)
 
     print("\t +++ INFO: Combining Excel Tables")
-    cmd = f"python3 {dir}scripts/GenomeChronicler_XLSX_fromTables.py {output_sample_dir}/ {output_sample_dir}/{sample}genotypes{dtag}.xlsx"
-    subprocess.run(cmd, shell=True)
+    output_xlsx_path = output_tables_dir/f"{sample}.genotypes.{dtag}.xlsx"
+    export_genotypes_xlsx_from_csvs(output_tables_dir, output_xlsx_path)
+    shutil.copy(output_xlsx_path, output_dir) # copy to main results dir
 
+    # render latex template
     print("\t +++ INFO: Compiling Genome Report")
-    TEMPLATETEX = f"{sample}_report_{dtag}"
-    shutil.copy(template, f"{output_sample_dir}/{TEMPLATETEX}.tex")
-    shutil.copy(f"{dir}templates/versionTable.txt", f"{output_sample_dir}/")
-    shutil.copy(f"{dir}templates/GeneStructure.pdf", f"{output_sample_dir}/")
+    template_withVEP = f"{dir}templates/reportTemplate_withVEP.tex"
+    template_ohneVEP = f"{dir}templates/reportTemplate_ohneVEP.tex"
+    template = template_ohneVEP
+    if VEP_file:
+        template = template_withVEP if not templateParam else templateParam
+    run_latex_dir = output_dir/"latex"
+    render_latex(output_tables_dir, sample, run_latex_dir,
+                 plot_path=output_plot_path, vep_dir=output_vep_dir,
+                 template_dir="templates", latex_template=template,
+                 )
+    latex_pdf_path = run_latex_dir/f"{sample}_report.pdf"
+    shutil.copy(latex_pdf_path, output_dir) # copy to main results dir
 
-    def run_latex():
-        cwd = os.getcwd()
-        os.chdir(f"{resultsdir}/results/results_{sample}")
-        for _ in range(3):
-            cmd = f"pdflatex -interaction=nonstopmode {TEMPLATETEX}.tex 2> /dev/null > /dev/null"
-            subprocess.run(cmd, shell=True)
-        os.chdir(cwd)
 
-    run_latex()
+    # if no_clean_temporary_files is False:
+    #     print("\t +++ INFO: Cleaning up Temporary and Intermediate Files")
+    #     if BAM_file is not None:
+    #         os.remove(BAM_file)
+    #         os.remove(f"{BAM_file}.bai")
+    #
+    #     shutil.rmtree(f"{temp_dir}")
+    #     for file in Path(f"{output_dir}/").glob("latest*.csv"):
+    #         os.remove(file)
+    #
+    #     subprocess.run(f"rm -rf {output_dir}/versionTable.txt", shell=True)
+    #     subprocess.run(f"rm -rf {output_dir}/GeneStructure.pdf", shell=True)
+    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.out", shell=True)
+    #     subprocess.run(f"rm -rf {output_dir}/texput.log", shell=True)
+    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.aux", shell=True)
+    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.log", shell=True)
+    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.tex", shell=True)
+    #     subprocess.run(f"rm -rf {dir}GenomeChronicler_plot_generator_fromAncestry.Rout", shell=True)
 
-    if no_clean_temporary_files is False:
-        print("\t +++ INFO: Cleaning up Temporary and Intermediate Files")
-        if BAM_file is not None:
-            os.remove(BAM_file)
-            os.remove(f"{BAM_file}.bai")
-
-        shutil.rmtree(f"{temp_dir}")
-        for file in Path(f"{output_sample_dir}/").glob("latest*.csv"):
-            os.remove(file)
-
-        subprocess.run(f"rm -rf {output_sample_dir}/versionTable.txt", shell=True)
-        subprocess.run(f"rm -rf {output_sample_dir}/GeneStructure.pdf", shell=True)
-        subprocess.run(f"rm -rf {output_sample_dir}/{TEMPLATETEX}.out", shell=True)
-        subprocess.run(f"rm -rf {output_sample_dir}/texput.log", shell=True)
-        subprocess.run(f"rm -rf {output_sample_dir}/{TEMPLATETEX}.aux", shell=True)
-        subprocess.run(f"rm -rf {output_sample_dir}/{TEMPLATETEX}.log", shell=True)
-        subprocess.run(f"rm -rf {output_sample_dir}/{TEMPLATETEX}.tex", shell=True)
-        subprocess.run(f"rm -rf {dir}GenomeChronicler_plot_generator_fromAncestry.Rout", shell=True)
-
-    time.sleep(1)
-    if BAM_file is not None:
-        BAM_file = BAM_file.replace(".clean.BAM", "")
-        print(
-            f"\n\t +++ DONE: Finished GenomeChronicler for file [ {BAM_file} ] in {datetime.now() - start_time} seconds")
+    # # time.sleep(1)
+    # if BAM_file is not None:
+    #     BAM_file = BAM_file.replace(".clean.BAM", "")
+    #     print(
+    #         f"\n\t +++ DONE: Finished GenomeChronicler for file [ {BAM_file} ] in {datetime.now() - start_time} seconds")
 
 
 if __name__ == '__main__':
-    main_druid()
+    main()
+

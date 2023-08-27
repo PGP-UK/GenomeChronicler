@@ -8,11 +8,11 @@ import fire
 import pandas as pd
 from tqdm import tqdm
 
-def ucfirst(s):
-    if len(s) > 0:
-        return s[0].upper() + s[1:]
-    else:
-        return s
+if __name__ == '__main__':
+    import sys
+    sys.path.append(os.path.abspath(os.getcwd()))
+from scripts.utils import ucfirst
+
 
 def processGenoset(genoset, genosets, genotypes, positiveGenosets):
     # example: logic = ((( $v[0] + $v[1] + $v[2] + $v[3] + $v[4] ) >= 1) and (!$v[5] and !$v[6] and !$v[7] and !$v[8] and !$v[9]))
@@ -140,40 +140,62 @@ def generate_ClinVar_url(rsid, sth5, sth5_sql):
         return ""
 
 
-def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
-    version = "22-146"
+def geno_tables_from_afogeno(afogeno_path, output_dir, verbose=False, version="22-146", reference_dir="reference"):
+    """
+    This function generates the geno tables from the afogeno output.
+
+    Inputs:
+        afogeno_path: path to the afogeno output
+        reference_dir: path to the reference directory
+            snpedia.db
+            gnomad.db
+            getevidence.db
+            clinvar.db
+            genosetDependencies.txt
+            parsedGenosets.txt
+    Outputs:
+        latest.good.reportTable.csv"
+        latest.bad.reportTable.csv
+        latest.genoset.reportTable.csv
+
+    Parameters
+    ----------
+    afogeno_path
+    output_dir
+    verbose
+    version
+    reference_dir
+
+    Returns
+    -------
+
+    """
+    # dir = ""
+    # if "SINGULARITY_NAME" in os.environ:
+    #     dir = "/GenomeChronicler/"
+
+    reference_dir = Path(reference_dir)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = output_dir/"temp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     # Note: It is quite clear this code can be optimised
     tmpBlacklist = {"rs10156191": 1, "rs12094543": 1, "rs1667255": 1, "rs17672135": 1, "rs6445975": 1, "rs7659604": 1}
 
     print(f"This is script [{__file__}] part of the report generator pipeline version [{version}];\n")
 
-    Path(outdir).mkdir(parents=True, exist_ok=True)
-    # Sort out input
-    # if len(sys.argv) != 3:
-    #     print("Usage: {0} MassagedGenotypeVCF OutputDirectory".format(sys.argv[0]))
-    #     sys.exit(1)
-
-    # filename = sys.argv[1]
-    # outdir = "./"
-    # if len(sys.argv) > 2:
-    #     outdir = sys.argv[2]
-
-    dir = ""
-    if "SINGULARITY_NAME" in os.environ:
-        dir = "/GenomeChronicler/"
-
     # Connect to databases
-    snpedia_db = sqlite3.connect(f"{dir}reference/snpedia.db")
+    snpedia_db = sqlite3.connect(reference_dir/f"snpedia.db")
     print("Opened database successfully [SNPedia]")
 
-    gnomad_db = sqlite3.connect(f"{dir}reference/gnomad.db")
+    gnomad_db = sqlite3.connect(reference_dir/f"gnomad.db")
     print("Opened database successfully [GnomAD]")
 
-    getevidence_db = sqlite3.connect(f"{dir}reference/getevidence.db")
+    getevidence_db = sqlite3.connect(reference_dir/f"getevidence.db")
     print("Opened database successfully [GetEvidence]")
 
-    clinvar_db = sqlite3.connect(f"{dir}reference/clinvar.db")
+    clinvar_db = sqlite3.connect(reference_dir/f"clinvar.db")
     print("Opened database successfully [ClinVar]")
 
     # Prepare statements
@@ -204,7 +226,7 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
 
     # Input Genoset Data
     allGenosets = []
-    with open(f"{dir}reference/genosetDependencies.txt", "r") as genoset_deps_file:
+    with open(reference_dir/f"genosetDependencies.txt", "r") as genoset_deps_file:
         for line in genoset_deps_file:
             line = line.strip()
             if not line:
@@ -213,7 +235,7 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
 
     genosets = {}
     genotypes = {}
-    with open(f"{dir}reference/parsedGenosets.txt", "r") as parsed_genosets_file:
+    with open(reference_dir/f"parsedGenosets.txt", "r") as parsed_genosets_file:
         for line in parsed_genosets_file:
             line = line.strip()
             if not line:
@@ -225,15 +247,15 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
     # output_path = f'{outdir}/latest.good.reportTable.csv'
     # if not Path(output_path).exists():
     if True:
-        IN = open(filename)
+        IN = open(afogeno_path)
         rows_GOOD = []
         rows_BAD = []
-        Path(f"{outdir}/latest.good.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
-        Path(f"{outdir}/latest.bad.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
-        proc_good = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {outdir}/latest.good.reportTable.csv", 
-                shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {outdir}/latest.bad.reportTable.csv", 
-                shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        Path(f"{temp_dir}/latest.good.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
+        Path(f"{temp_dir}/latest.bad.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
+        proc_good = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {temp_dir}/latest.good.reportTable.csv",
+                                     shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {temp_dir}/latest.bad.reportTable.csv",
+                                    shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     
         for line in tqdm(IN, disable=not verbose):
             # for line in IN:
@@ -388,10 +410,10 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
 
     print("\t +++ POSITIVES:\n", positiveGenosets)
 
-    with open(f"{outdir}/latest.genoset.reportTable.csv", "w") as geno:
+    with open(f"{output_dir}/latest.genoset.reportTable.csv", "w") as geno:
         geno.write("Magnitude,Identifier,Summary\n")
 
-    sort_process = subprocess.Popen(f"sort -t \",\" -k 1,1nr >> {outdir}/latest.genoset.reportTable.csv", stdin=subprocess.PIPE, shell=True)
+    sort_process = subprocess.Popen(f"sort -t \",\" -k 1,1nr >> {output_dir}/latest.genoset.reportTable.csv", stdin=subprocess.PIPE, shell=True)
     # proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {outdir}/latest.bad.reportTable.csv", 
     #             shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     for geno in sorted(positiveGenosets.keys()):
@@ -409,6 +431,46 @@ def geno_tables_from_afogeno(filename, outdir='./', verbose=False):
     print("Operation done successfully")
     snpedia_db.close()
 
+    filter_final_report_csv(f"{temp_dir}/latest.good.reportTable.csv", f"{output_dir}/latest.good.reportTable.csv")
+    filter_final_report_csv(f"{temp_dir}/latest.bad.reportTable.csv", f"{output_dir}/latest.bad.reportTable.csv")
+
+
+def filter_final_report_csv(csv_input_path, csv_output_path=None, DEBUG=False):
+    '''
+
+    '''
+    # read csv
+    df = pd.read_csv(csv_input_path,dtype={'Mag.':'str'})
+
+    # filter
+    if len(df.columns) <= 4:
+        if DEBUG:
+            print("WARNING: No links found")
+            return
+    df = df[~(df['Mag.'].astype('float')==0)]
+    df = df[~(df['Identifier'].str.startswith('{rs')|df['Identifier'].str.startswith('{i'))]
+
+    # export
+    if csv_output_path is None: # inplace
+        # warning, inplace operation
+        csv_output_path = csv_input_path
+    Path(csv_output_path).parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_output_path, index=False)
+
+
+
+funcs = {
+    'geno_tables_from_afogeno': geno_tables_from_afogeno,
+    'filter_final_report_csv': filter_final_report_csv,
+}
+
+
+class Tools(object):
+    def __init__(self):
+        super(Tools, self).__init__()
+
 
 if __name__ == '__main__':
-    fire.Fire(geno_tables_from_afogeno)
+    for k, v in funcs.items():
+        setattr(Tools, k, staticmethod(v))
+    fire.Fire(Tools)
