@@ -12,8 +12,9 @@ from scripts.ancestry_generator import generate_ancestry_pipeline
 from scripts.genotables_from_afogeno import geno_tables_from_afogeno
 from scripts.io import render_latex, export_genotypes_xlsx_from_csvs
 from scripts.plot_generator_fromAncestry import plot_generator_from_ancestry
-from scripts.utils import clean_bam_file_noCHR
-from scripts.vep_tables_from_vep import get_vep_tables_from_vep
+from scripts.to_front_jsons import vep_labex_tables_to_jsons, geno_tables_to_jsons
+from scripts.utils import clean_bam_file_noCHR, get_vep_tables_from_vep
+
 
 def check_path_exist(path, file_type,
                      error_template="--- ERROR: The {file_type} specified in the command line wasn't found [{"
@@ -94,14 +95,11 @@ def main():
     if "SINGULARITY_NAME" in os.environ:
         dir = "/GenomeChronicler/"
 
-    resultsdir = os.getcwd()
-
     # Defining input options and their default values...
     parser = get_parser()
     args = parser.parse_args()
 
     # conf_file = None
-    debugFlag = args.debug
     BAM_file = args.BAM_file
     gVCF_file = args.gVCF_file
     VEP_file = args.VEP_file
@@ -142,15 +140,8 @@ def main():
     sample = None
     if BAM_file:
         sample = Path(BAM_file).name.split('.')[0]
-        # sample = os.path.splitext(os.path.basename(BAM_file))[0]
-        # sample = re.sub(r'\.recal', '', sample)
-        # sample = re.sub(r'\.bam\.clean', '', sample, flags=re.IGNORECASE)
     elif gVCF_file:
         sample = Path(gVCF_file).name.split('.')[0]
-        # sample = os.path.splitext(os.path.basename(gVCF_file))[0]
-        # sample = re.sub(r'\.g\.', '.', sample, flags=re.IGNORECASE)
-        # sample = re.sub(r'\.g\.vcf', '', sample, flags=re.IGNORECASE)
-        # sample = re.sub(r'\.vcf', '', sample, flags=re.IGNORECASE)
     else:
         print_header_ascii()
         print("\t --- MAJOR ERROR: No BAM or gVCF file found. Please check the usage notes above and try again ---\n",
@@ -158,14 +149,6 @@ def main():
         sys.exit(555)
 
     output_dir = Path(resultsdir)
-    temp_dir = output_dir/"temp"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-
-    # os.system(f"mkdir -p {temp_dir}")
-    # check_path_exist(temp_dir, "Results directory", exit_code=102,
-    #                  error_template="\t --- ERROR: Results directory [{path}] can't be found and could not be "
-    #                                 "created. Please check permissions and try again ---\n")
-
     LOGFILE2 = f"{output_dir}/{sample}.processingLog.stderr.txt"
 
     # Main bit of code
@@ -181,12 +164,15 @@ def main():
         output_vep_dir = output_dir/"vep_dir"
         get_vep_tables_from_vep(VEP_file, output_vep_dir)
 
+    clean_bam_dir = None
     if BAM_file:
         print("\t +++ INFO: Preprocessing BAM file")
 
-        output_path = temp_dir/f"{sample}.clean.BAM"
+        clean_bam_dir = output_dir/"clean_bam"
+        clean_bam_dir.mkdir(parents=True, exist_ok=True)
+        output_path = clean_bam_dir/f"{sample}.clean.BAM"
         if not output_path.exists():
-            clean_bam_file_noCHR(BAM_file, temp_dir)
+            clean_bam_file_noCHR(BAM_file, clean_bam_dir)
 
         input_path = output_path
     elif gVCF_file:
@@ -210,9 +196,7 @@ def main():
     if not Path(output_plot_path).exists():
         # cmd = f"PCA_PATH={pca_eigenvec_path} ID={sample} OUTPUT_DIR={output_plot_path} R CMD BATCH {dir}scripts/plot_generator_fromAncestry.R"
         # ret = subprocess.run(cmd, shell=True)
-        # print(ret)
         plot_generator_from_ancestry(pca_eigenvec_path, sample, output_dir)
-        # exit()
 
     print("\t +++ INFO: Generating Genotypes Files")
     output_afogeno_dir = output_dir/"afogeno"
@@ -225,8 +209,10 @@ def main():
 
     print("\t +++ INFO: Generating Genome Report Tables")
     output_tables_dir = output_dir/"tables"
-    geno_tables_from_afogeno(afogeno_file, output_tables_dir)
-    for path in output_tables_dir.glob("*.csv"):
+    geno_tables_from_afogeno(afogeno_file, output_tables_dir, truncate=True)
+    output_tables_full_dir = output_dir/"tables_full"
+    geno_tables_from_afogeno(afogeno_file, output_tables_full_dir, truncate=False)
+    for path in output_tables_full_dir.glob("*.csv"):
         shutil.copy(path, output_dir)
 
     print("\t +++ INFO: Combining Excel Tables")
@@ -249,31 +235,27 @@ def main():
     latex_pdf_path = run_latex_dir/f"{sample}_report.pdf"
     shutil.copy(latex_pdf_path, output_dir) # copy to main results dir
 
+    # dump front jsons
+    output_front_json_dir = output_dir/"front_jsons"
+    geno_tables_to_jsons(output_tables_full_dir, output_dir=output_front_json_dir)
+    vep_labex_tables_to_jsons(output_vep_dir, latex_dir=run_latex_dir, output_dir=output_front_json_dir)
 
-    # if no_clean_temporary_files is False:
-    #     print("\t +++ INFO: Cleaning up Temporary and Intermediate Files")
-    #     if BAM_file is not None:
-    #         os.remove(BAM_file)
-    #         os.remove(f"{BAM_file}.bai")
-    #
-    #     shutil.rmtree(f"{temp_dir}")
-    #     for file in Path(f"{output_dir}/").glob("latest*.csv"):
-    #         os.remove(file)
-    #
-    #     subprocess.run(f"rm -rf {output_dir}/versionTable.txt", shell=True)
-    #     subprocess.run(f"rm -rf {output_dir}/GeneStructure.pdf", shell=True)
-    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.out", shell=True)
-    #     subprocess.run(f"rm -rf {output_dir}/texput.log", shell=True)
-    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.aux", shell=True)
-    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.log", shell=True)
-    #     subprocess.run(f"rm -rf {output_dir}/{TEMPLATETEX}.tex", shell=True)
-    #     subprocess.run(f"rm -rf {dir}GenomeChronicler_plot_generator_fromAncestry.Rout", shell=True)
+    if no_clean_temporary_files is False:
+        print("\t +++ INFO: Cleaning up Temporary and Intermediate Files")
 
-    # # time.sleep(1)
-    # if BAM_file is not None:
-    #     BAM_file = BAM_file.replace(".clean.BAM", "")
-    #     print(
-    #         f"\n\t +++ DONE: Finished GenomeChronicler for file [ {BAM_file} ] in {datetime.now() - start_time} seconds")
+        if clean_bam_dir is not None:
+            shutil.rmtree(clean_bam_dir, ignore_errors=True)
+
+        shutil.rmtree(output_ancestry_dir, ignore_errors=True)
+        shutil.rmtree(output_afogeno_dir, ignore_errors=True)
+        # shutil.rmtree(output_tables_dir, ignore_errors=True)
+        # shutil.rmtree(output_tables_full_dir, ignore_errors=True)
+        shutil.rmtree(run_latex_dir, ignore_errors=True)
+
+        if output_vep_dir is not None:
+            shutil.rmtree(output_vep_dir, ignore_errors=True)
+
+    print(f"\t +++ DONE: Finished GenomeChronicler for file [ {input_path} ] in {datetime.now() - start_time} seconds")
 
 
 if __name__ == '__main__':

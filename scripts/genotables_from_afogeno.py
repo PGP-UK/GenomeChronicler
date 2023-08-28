@@ -140,7 +140,7 @@ def generate_ClinVar_url(rsid, sth5, sth5_sql):
         return ""
 
 
-def geno_tables_from_afogeno(afogeno_path, output_dir, verbose=False, version="22-146", reference_dir="reference"):
+def geno_tables_from_afogeno(afogeno_path, output_dir, verbose=False, version="22-146", reference_dir="reference", truncate=True):
     """
     This function generates the geno tables from the afogeno output.
 
@@ -246,159 +246,183 @@ def geno_tables_from_afogeno(afogeno_path, output_dir, verbose=False, version="2
 
     # output_path = f'{outdir}/latest.good.reportTable.csv'
     # if not Path(output_path).exists():
-    if True:
-        IN = open(afogeno_path)
-        rows_GOOD = []
-        rows_BAD = []
-        Path(f"{temp_dir}/latest.good.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
-        Path(f"{temp_dir}/latest.bad.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
-        proc_good = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {temp_dir}/latest.good.reportTable.csv",
-                                     shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {temp_dir}/latest.bad.reportTable.csv",
-                                    shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-        for line in tqdm(IN, disable=not verbose):
-            # for line in IN:
-            line = line.strip()
-            if line == "":
+
+    IN = open(afogeno_path)
+    # rows_GOOD = []
+    # rows_BAD = []
+    # Path(f"{temp_dir}/latest.good.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
+    # Path(f"{temp_dir}/latest.bad.reportTable.csv").write_text("Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar\n")
+    # proc_good = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {temp_dir}/latest.good.reportTable.csv",
+    #                              shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    # proc_bad = subprocess.Popen(f"sort | uniq | sort -t \',\' -k1,1nr >> {temp_dir}/latest.bad.reportTable.csv",
+    #                             shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    entries_good = []
+    entries_bad = []
+    for line in tqdm(IN, disable=not verbose):
+        # for line in IN:
+        line = line.strip()
+        if line == "":
+            continue
+        if line.startswith("#"):
+            continue
+
+        debugBuffer = ""
+
+        data = line.split("\t")
+        if len(data) < 12:
+            data.append("")
+
+        debugBuffer += "\n+++\n" + "\t".join(data) + "\n"
+
+        strand = "plus"
+        snp = data[3]
+
+        # rvS = sth1s.execute(snp)
+        rvS = sth1s.execute(sth1s_sql, (snp,))
+        counter = 0
+        for row in sth1s.fetchall():
+            strand = row[1]
+            counter += 1
+        if counter > 1:
+            raise Exception("Oh my Gawd!!! DNA has two strands (and it isn't a good thing in this case)")
+
+        # rvFlag = sth1f.execute(snp)
+        rvS = sth1f.execute(sth1f_sql, (snp,))
+        flagID = 0
+        for row in sth1f.fetchall():
+            flagID = 1
+        if flagID == 1 and (data[8] == "0/0" or data[8] == "./."):
+            continue
+
+        # strand
+        if strand == "minus":
+            data[9] = data[9].translate(str.maketrans("ACTGactg", "TGACtgac"))
+            data[10] = data[10].translate(str.maketrans("ACTGactg", "TGACtgac"))
+
+        genotype = [data[9], data[10]]
+        extra = data[11]
+
+        genotypes[snp] = {}
+        if extra != "":
+            genotypes[snp][extra] = 1
+        genotypes[snp][genotype[0]] = 1
+        genotypes[snp][genotype[1]] = 1
+        genotypes[snp][";".join(genotype)] = 1
+
+        try:
+            rv = sth1c.execute(sth1c_sql, (snp,))
+        except Exception as e:
+            print(data)
+            print(e)
+            continue
+        alleles = {}
+        countGenotype = 0
+        for row in sth1c.fetchall():
+            debugBuffer += "ID = " + str(row[0]) + "\n"
+            debugBuffer += "REPUTE = " + str(row[1]) + "\n"
+            debugBuffer += "MAGNITUDE = " + str(row[2]) + "\n"
+            debugBuffer += "ALLELE1 =  " + str(row[3]) + "\n"
+            debugBuffer += "ALLELE2 =  " + str(row[4]) + "\n"
+            debugBuffer += "SUMMARY =  " + str(row[5]) + "\n"
+            debugBuffer += "RSID =  " + str(row[6]) + "\n"
+            debugBuffer += "IID =  " + str(row[7]) + "\n"
+
+            row = list(row)
+            row.append(row[5])
+            row[5] = cleanSummaryString(row[5])
+            # if truncate:
+            #     row[5] = cleanSummaryString(row[5])
+            # if "," in row[5]:
+            #     row[5] = f'"{row[5]}"'
+
+            a1 = row[3]
+            a2 = row[4]
+
+            # if row[2] is None or row[2] == 0:
+            if row[2] is None or row[2] == 0 or row[2] == "0": # Excluding magnitude 0
                 continue
-            if line.startswith("#"):
-                continue
 
-            debugBuffer = ""
+            alleles.setdefault(a1, {})[a2] = [row[1], row[0], row[2], f"({a1};{a2})", row[5], row[-1]]
+            alleles.setdefault(a2, {})[a1] = alleles[a1][a2]
 
-            data = line.split("\t")
-            if len(data) < 12:
-                data.append("")
+            countGenotype += 1
 
-            debugBuffer += "\n+++\n" + "\t".join(data) + "\n"
 
-            strand = "plus"
-            snp = data[3]
 
-            # rvS = sth1s.execute(snp)
-            rvS = sth1s.execute(sth1s_sql, (snp,))
-            counter = 0
-            for row in sth1s.fetchall():
-                strand = row[1]
-                counter += 1
-            if counter > 1:
-                raise Exception("Oh my Gawd!!! DNA has two strands (and it isn't a good thing in this case)")
+        if countGenotype:
+            if genotype[0] in alleles and genotype[1] in alleles[genotype[0]]:
 
-            # rvFlag = sth1f.execute(snp)
-            rvS = sth1f.execute(sth1f_sql, (snp,))
-            flagID = 0
-            for row in sth1f.fetchall():
-                flagID = 1
-            if flagID == 1 and (data[8] == "0/0" or data[8] == "./."):
-                continue
-
-            # strand
-            if strand == "minus":
-                data[9] = data[9].translate(str.maketrans("ACTGactg", "TGACtgac"))
-                data[10] = data[10].translate(str.maketrans("ACTGactg", "TGACtgac"))
-
-            genotype = [data[9], data[10]]
-            extra = data[11]
-
-            genotypes[snp] = {}
-            if extra != "":
-                genotypes[snp][extra] = 1
-            genotypes[snp][genotype[0]] = 1
-            genotypes[snp][genotype[1]] = 1
-            genotypes[snp][";".join(genotype)] = 1
-
-            try:
-                rv = sth1c.execute(sth1c_sql, (snp,))
-            except Exception as e:
-                print(data)
-                print(e)
-                continue
-            alleles = {}
-            countGenotype = 0
-            for row in sth1c.fetchall():
-                debugBuffer += "ID = " + str(row[0]) + "\n"
-                debugBuffer += "REPUTE = " + str(row[1]) + "\n"
-                debugBuffer += "MAGNITUDE = " + str(row[2]) + "\n"
-                debugBuffer += "ALLELE1 =  " + str(row[3]) + "\n"
-                debugBuffer += "ALLELE2 =  " + str(row[4]) + "\n"
-                debugBuffer += "SUMMARY =  " + str(row[5]) + "\n"
-                debugBuffer += "RSID =  " + str(row[6]) + "\n"
-                debugBuffer += "IID =  " + str(row[7]) + "\n"
-
-                row = list(row)
-                row[5] = cleanSummaryString(row[5])
-
-                a1 = row[3]
-                a2 = row[4]
-
-                # if row[2] is None or row[2] == 0:
-                if row[2] is None or row[2] == 0 or row[2] == "0": # Excluding magnitude 0
+                geno_desc = alleles[genotype[0]][genotype[1]][4]
+                geno_desc_full = alleles[genotype[0]][genotype[1]][5]
+                #Implement some filters here
+                if re.findall(r"^\s*$|^Common|^None|^Normal|^Average|^Benign most likely|^Ancestral value|^Unaffected Genotype", geno_desc, re.IGNORECASE):
+                    continue
+                if re.findall(r"^Benign variant|^L22- S142-|^Depends on|^Extensive metabolizer", geno_desc, re.IGNORECASE):
+                    continue
+                if re.findall(r"^Typical BuChE|Complex; generally normal risk|common in clinvar|Major allele, normal risk|Slight if any|Likely to be benign|Most common genotype", geno_desc, re.IGNORECASE):
+                    continue
+                if re.findall(r"^Most likely a benign polymorphism|Benign \(harmless\) variant|^1.3x risk$", geno_desc, re.IGNORECASE):
+                    continue
+                if re.findall(r"normal risk of migraine|More likely to go bald; common|Most likely benign polymorphism|Slightly increased lifespan?|^Benign polymorphism", geno_desc, re.IGNORECASE):
+                    continue
+                if re.findall(r"No increased risk of |Likely to be a benign variant|Carrier of a benign change|Classified as benign in ClinVar", geno_desc, re.IGNORECASE):
                     continue
 
-                alleles.setdefault(a1, {})[a2] = [row[1], row[0], row[2], f"({a1};{a2})", row[5]]
-                alleles.setdefault(a2, {})[a1] = alleles[a1][a2]
+                rsid = alleles[genotype[0]][genotype[1]][1]
+                gnomAD = generate_GnomAD_url(rsid, sth3, sth3_sql)
+                getevidence = generate_get_evidence_url(rsid, sth4, sth4_sql)
+                snpedia = generate_SNPedia_url(rsid)
+                clinvar = generate_ClinVar_url(rsid, sth5, sth5_sql)
 
-                countGenotype += 1
+                if gnomAD == "" and getevidence == "" and clinvar == "":
+                    continue
 
+                if rsid in tmpBlacklist:
+                    continue
 
+                desc = geno_desc_full
+                if truncate:
+                    desc = geno_desc
+                alleles[genotype[0]][genotype[1]][1] = snpedia
+                alleles[genotype[0]][genotype[1]][4] = generate_Summary_url(rsid, desc)
+                entry = [alleles[genotype[0]][genotype[1]][2], alleles[genotype[0]][genotype[1]][1],
+                            alleles[genotype[0]][genotype[1]][3], alleles[genotype[0]][genotype[1]][4]]
 
-            if countGenotype:
-                if genotype[0] in alleles and genotype[1] in alleles[genotype[0]]:
+                # tmpString = ",".join(
+                #     [alleles[genotype[0]][genotype[1]][2], alleles[genotype[0]][genotype[1]][1],
+                #      alleles[genotype[0]][genotype[1]][3], alleles[genotype[0]][genotype[1]][4]])
+                # tmpString = tmpString.encode('ascii', 'ignore').decode()  # Removing non-ASCII characters
+                if alleles[genotype[0]][genotype[1]][2] is None or alleles[genotype[0]][genotype[1]][2] == "":
+                    continue
+                elif alleles[genotype[0]][genotype[1]][0] is None or alleles[genotype[0]][genotype[1]][0] == "":
+                    # print("WARNING: Go here and with a fair sense of justice determine is this is good or bad\n", tmpString, "\n")
+                    continue
+                elif alleles[genotype[0]][genotype[1]][0] == "Good":
+                    # proc_good.stdin.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n".encode())
+                    entry += [gnomAD, getevidence, clinvar]
+                    entries_good.append(entry)
+                elif alleles[genotype[0]][genotype[1]][0] == "Bad":
+                    entry += [gnomAD, getevidence, clinvar]
+                    entries_bad.append(entry)
+                    # proc_bad.stdin.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n".encode())
 
-                    geno_desc = alleles[genotype[0]][genotype[1]][4]
-                    #Implement some filters here
-                    if re.findall(r"^\s*$|^Common|^None|^Normal|^Average|^Benign most likely|^Ancestral value|^Unaffected Genotype", geno_desc, re.IGNORECASE):
-                        continue
-                    if re.findall(r"^Benign variant|^L22- S142-|^Depends on|^Extensive metabolizer", geno_desc, re.IGNORECASE):
-                        continue
-                    if re.findall(r"^Typical BuChE|Complex; generally normal risk|common in clinvar|Major allele, normal risk|Slight if any|Likely to be benign|Most common genotype", geno_desc, re.IGNORECASE):
-                        continue
-                    if re.findall(r"^Most likely a benign polymorphism|Benign \(harmless\) variant|^1.3x risk$", geno_desc, re.IGNORECASE):
-                        continue
-                    if re.findall(r"normal risk of migraine|More likely to go bald; common|Most likely benign polymorphism|Slightly increased lifespan?|^Benign polymorphism", geno_desc, re.IGNORECASE):
-                        continue
-                    if re.findall(r"No increased risk of |Likely to be a benign variant|Carrier of a benign change|Classified as benign in ClinVar", geno_desc, re.IGNORECASE):
-                        continue
+            elif countGenotype > 2:
+                print("IMPORTANT: ", debugBuffer)
+                print("IMPORTANT: ", debugBuffer)
+                print("IMPORTANT: Please debug this here as I couldn't find the right alleles [", strand, "] [",
+                      countGenotype, "]\n\n\n")
 
-                    rsid = alleles[genotype[0]][genotype[1]][1]
-                    gnomAD = generate_GnomAD_url(rsid, sth3, sth3_sql)
-                    getevidence = generate_get_evidence_url(rsid, sth4, sth4_sql)
-                    snpedia = generate_SNPedia_url(rsid)
-                    clinvar = generate_ClinVar_url(rsid, sth5, sth5_sql)
-
-                    if gnomAD == "" and getevidence == "" and clinvar == "":
-                        continue
-
-                    if rsid in tmpBlacklist:
-                        continue
-
-                    alleles[genotype[0]][genotype[1]][1] = snpedia
-                    alleles[genotype[0]][genotype[1]][4] = generate_Summary_url(rsid,
-                                                                                alleles[genotype[0]][genotype[1]][
-                                                                                    4])
-                    tmpString = ",".join(
-                        [alleles[genotype[0]][genotype[1]][2], alleles[genotype[0]][genotype[1]][1],
-                         alleles[genotype[0]][genotype[1]][3], alleles[genotype[0]][genotype[1]][4]])
-                    tmpString = tmpString.encode('ascii', 'ignore').decode()  # Removing non-ASCII characters
-                    if alleles[genotype[0]][genotype[1]][2] is None or alleles[genotype[0]][genotype[1]][2] == "":
-                        continue
-                    elif alleles[genotype[0]][genotype[1]][0] is None or alleles[genotype[0]][genotype[1]][0] == "":
-                        # print("WARNING: Go here and with a fair sense of justice determine is this is good or bad\n", tmpString, "\n")
-                        continue
-                    elif alleles[genotype[0]][genotype[1]][0] == "Good":
-                        proc_good.stdin.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n".encode())
-                    elif alleles[genotype[0]][genotype[1]][0] == "Bad":
-                        proc_bad.stdin.write(f"{tmpString},{gnomAD},{getevidence},{clinvar}\n".encode())
-
-                elif countGenotype > 2:
-                    print("IMPORTANT: ", debugBuffer)
-                    print("IMPORTANT: ", debugBuffer)
-                    print("IMPORTANT: Please debug this here as I couldn't find the right alleles [", strand, "] [",
-                          countGenotype, "]\n\n\n")
-
-        proc_good.stdin.close()
-        proc_bad.stdin.close()
+    # proc_good.stdin.close()
+    # proc_bad.stdin.close()
+    cols = "Mag.,Identifier,Genotype,Summary,GnomAD,GetEvidence,ClinVar".split(",")
+    df_good = pd.DataFrame(entries_good, columns=cols)
+    df_good = df_good.sort_values(by=["Mag."], ascending=False)
+    df_good = df_good.drop_duplicates()
+    df_good.to_csv(f"{temp_dir}/latest.good.reportTable.csv", index=False)
+    df_bad = pd.DataFrame(entries_bad, columns=cols)
+    df_bad = df_bad.sort_values(by=["Mag."], ascending=False)
+    df_bad = df_bad.drop_duplicates()
+    df_bad.to_csv(f"{temp_dir}/latest.bad.reportTable.csv", index=False)
 
 
     positiveGenosets = {}
