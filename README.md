@@ -1,76 +1,140 @@
-	 #####                                         #####                                                            
-	#     # ###### #    #  ####  #    # ######    #     # #    # #####   ####  #    # #  ####  #      ###### #####  
-	#       #      ##   # #    # ##  ## #         #       #    # #    # #    # ##   # # #    # #      #      #    # 
-	#  #### #####  # #  # #    # # ## # #####     #       ###### #    # #    # # #  # # #      #      #####  #    # 
-	#     # #      #  # # #    # #    # #         #       #    # #####  #    # #  # # # #      #      #      #####  
-	#     # #      #   ## #    # #    # #         #     # #    # #   #  #    # #   ## # #    # #      #      #   #  
-	 #####  ###### #    #  ####  #    # ######     #####  #    # #    #  ####  #    # #  ####  ###### ###### #    #  
+```ascii
+ #####                                         #####
+#     # ###### #    #  ####  #    # ######    #     # #    # #####   ####  #    # #  ####  #      ###### #####
+#       #      ##   # #    # ##  ## #         #       #    # #    # #    # ##   # # #    # #      #      #    #
+#  #### #####  # #  # #    # # ## # #####     #       ###### #    # #    # # #  # # #      #      #####  #    #
+#     # #      #  # # #    # #    # #         #       #    # #####  #    # #  # # # #      #      #      #####
+#     # #      #   ## #    # #    # #         #     # #    # #   #  #    # #   ## # #    # #      #      #   #
+ #####  ###### #    #  ####  #    # ######     #####  #    # #    #  ####  #    # #  ####  ###### ###### #    #
+```
 
+# GenomeChronicler
 
+This is the repository for GenomeChronicler, the Personal Genome Project United Kingdom (PGP-UK) genomic report generation scripts.
 
+## Dependencies
 
-[![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/3664)
+* [Docker](https://docs.docker.com/) or [Singularity](https://sylabs.io/guides/3.1/user-guide)
 
+## Input Files
 
-# Welcome
+* BAM file OR VEP file
+* VEP generated summary HTML file (optional)
 
-This is the repository for Genome Chronicler, the Personal Genome Project United Kingdom (PGP-UK) genomic report generation scripts. 
+## Running GenomeChronicler
 
-# Getting Started
+### Obtaining test data
 
-After cloning this repository, run the SetupMeFirst.sh script in your local system to retrieve the extra files needed to run the pipeline (around 10GB, so too big for git). 
+Getting some test data (NA12878 from ENA, pre-mapped to GRCh38, and the respective reference) and store this in your current folder:
 
-# Input files
+```bash
+# CRAM file for NA12878
+curl -L -o na12878wxs.cram ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/data/CEU/NA12878/alignment/NA12878.alt_bwamem_GRCh38DH.20150718.CEU.low_coverage.cram
 
-The main script (GenomeChronicler_mainDruid.pl) needs a BAM file as input, and optionally can also use a VEP generated summary html file, if variants have already been called on the data and summaries are to be produced.
+# gVCF for NA12878
+# TODO...
 
-# Dependencies
+# HG38 Human Reference
+curl -L -o hg38.fa ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
+```
 
-To handle the myriad dependencies present in this pipeline, it is avaliable through Singularity Hub as a singularity container (see badge at top of the page). 
+### With Singularity
 
+1. Downloading pre-packaged GenomeChronicler from Github Packages
 
-# Easy Start using Singularity
+```bash
+singularity pull docker://ghcr.io/pgp-uk/genomechronicler:latest
+```
 
-If you don't already have singularity on your system, or want to know more about it, head to their userguide at: https://sylabs.io/guides/3.1/user-guide/
-While Singularity is not needed to run GenomeChronicler, it does make setup much easier. 
+2. Converting data to BAM format
 
-For a manual installation without Singularity, please follow the steps in the %post section of the Singularity file in this repository, to install all the dependencies.
-
-
-
-Downloading pre-packaged GenomeChronicler from SingularityHub
-````
-singularity pull shub://PGP-UK/GenomeChronicler
-````
-
-
-Getting some test data (NA12878 from ENA, pre-mapped to GRCh38, and the respective reference)
-````wget ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR323/ERR3239334/NA12878.final.cram #A bit too large for a starting test
-singularity exec GenomeChronicler_latest.sif wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/data/CEU/NA12878/alignment/NA12878.alt_bwamem_GRCh38DH.20150718.CEU.low_coverage.cram
-
-singularity exec GenomeChronicler_latest.sif wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
-
-````
-
-Converting data to BAM format 
-````
-singularity exec GenomeChronicler_latest.sif samtools view -T GRCh38_full_analysis_set_plus_decoy_hla.fa -b -o NA12878wxs.bam NA12878.alt_bwamem_GRCh38DH.20150718.CEU.low_coverage.cram
-````
-
+```bash
+singularity exec GenomeChronicler_latest.sif samtools view -@ 8 -T hg38.fa -b -o NA12878wxs.bam na12878wxs.cram
+```
 
 Running GenomeChronicler on the data
-````
-singularity run GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam 
-````
 
-# Command Line Options
+```bash
+singularity run GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam --GATKthreads 8
+```
 
+> Note: you can use `singularity shell` to open an interactive linux to run commands directly
 
+### With Docker
+
+1. Downloading pre-packaged GenomeChronicler from Github Packages
+
+```bash
+docker pull ghcr.io/pgp-uk/genomechronicler:latest
+```
+
+2. Converting data to BAM format
+
+```bash
+docker run -v $PWD:/d/ genomechronicler samtools view -@ 8 -T /d/hg38.fa -b -o /d/NA12878wxs.bam /d/na12878wxs.cram
+```
+
+Running GenomeChronicler on the data
+
+```bash
+# With a GVCF
+docker run -v $PWD:/d/ genomechronicler genomechronicler --vcfFile=/GenomeChronicler/NA12878wxs.g.vcf --resultsDir /GenomeChronicler/out2 --GATKthreads 8
+
+# With a BAM
+docker run -v $PWD:/d/ genomechronicler genomechronicler --bamFile=/d/NA12878wxs.bam --resultsDir /d/out --GATKthreads 8
+```
+
+> Note: you can use `docker run --rm -it -v $PWD:/d/ genomechronicler bash` to open an interactive linux to run commands directly.
+
+## Command Line Options
 
 |       Option      | Requirement | Description                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |:-----------------:|:------------:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| --bamFile         | REQUIRED     | The path to a BAM file that has been preprocessed through markDuplicates and VariantQualityScoreRecalibration. This can be obtained by running the first step of the Sarek nextflow pipeline, or through other means that do respect the general principles of the GATK Variation Calling Best Practices workflow. Note that no variation calling is needed to run GenomeChronicler.                                             |
+| --bamFile         | REQUIRED (if no gVCF)     | The path to a BAM file that has been preprocessed through markDuplicates and VariantQualityScoreRecalibration. This can be obtained by running the first step of the Sarek nextflow pipeline, or through other means that do respect the general principles of the GATK Variation Calling Best Practices workflow. Note that no variation calling is needed to run GenomeChronicler.
+| --vcfFile         | REQUIRED (if no BAM)   | The path to a gVCF file produced by GATK or the GRCh38 reference genome. This can be obtained by running all steps from the Sarek nextflow pipeline, or through other means that do respect the general principles of the GATK Variation Calling Best Practices workflow. This avoids the need to run the GATK with GC.                                             |
 | --vepFile         | OPTIONAL     | For the summary tables to appear in the report, a VEP summary HTML file must be provided. This will likely be generated if the data is from whole genome sequencing and variants were called (e.g. by running all the germline calling steps of the Sarek nextflow pipeline or other GATK Best Practices based workflow). If this isn't provided, summary tables and plots will automatically be excluded from the final report. |
 | --resultsDir      | OPTIONAL     | For setting the absolute path of the results folder to be produced when running GenomeChronicler.                                                                                                                                                                                                                                                                                                                                |
 | --customTemplate  | OPTIONAL     | For customising the output report, set this variable to the path of a custom LaTeX file to act as a template for the report. The default templates bundled with this software can also be found in the project github page.                                                                                                                                                                                                      |
 | --GATKthreads     | OPTIONAL     | Number of threads to use for the GATK genotyping steps of this processing pipeline.                                                                                                                                                                                                                                                                                                                                              |
+
+## Development
+
+### Working with a Docker Image
+
+There is a separate docker image that is designed for development:
+
+1. Clone the repository:
+
+2. Build the development docker image
+
+```bash
+docker build -f Dockerfile-dev -t gc_dev .
+```
+
+3. Start docker environment and map local directory inside.
+
+```bash
+docker run --rm -it -v $PWD:/GenomeChronicler gc_dev bash
+```
+
+4. Now any changes you make to the codebase in your host machine, will be immediately reflected in the docker image.
+
+### Release a new Docker build
+
+1. Login using a token with access to Github Packages. See [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) for more info.
+
+```bash
+export CR_PAT=YOUR_TOKEN
+
+echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+```
+
+2. Build docker image and upload to Github Packages
+
+```bash
+docker build -t ghcr.io/pgp-uk/genomechronicler:latest .
+docker build -t ghcr.io/pgp-uk/genomechronicler:v0.0.3 .
+
+docker push ghcr.io/pgp-uk/genomechronicler:latest
+docker push ghcr.io/pgp-uk/genomechronicler:v0.0.3
+```
