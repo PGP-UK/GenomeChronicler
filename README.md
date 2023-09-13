@@ -14,11 +14,11 @@ This is the repository for GenomeChronicler, the Personal Genome Project United 
 
 ## Dependencies
 
-* [Docker](https://docs.docker.com/) or [Singularity](https://sylabs.io/guides/3.1/user-guide)
+* [Docker](https://docs.docker.com/) or [Singularity](https://docs.sylabs.io/guides/latest/user-guide/)
 
 ## Input Files
 
-* BAM file OR VEP file
+* BAM file OR gVCF file
 * VEP generated summary HTML file (optional)
 
 ## Running GenomeChronicler
