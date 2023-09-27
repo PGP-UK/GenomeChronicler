@@ -17,19 +17,14 @@ RUN apt-get update \
         r-base-core \
         tk-dev \
         mesa-common-dev \
+        python3 python3-pip \
         libhts-dev \
-        libglu1-mesa-dev \
     && add-apt-repository ppa:linuxuprising/java \
     && apt-get install -y openjdk-8-jdk
 
-# CPAN perl
-RUN wget -O - http://cpanmin.us | perl - --self-upgrade \
-    && cpan File::chdir \
-    && cpan Config::General \
-    && cpan Data::Dumper \
-    && cpan Excel::Writer::XLSX \
-    && cpan DBI \
-    && cpan DBD::SQLite
+# Python
+RUN pip3 install fire==0.5.0 pandas==1.5.3 xlsxwriter==3.0.9 tqdm==4.65.0 \
+    matplotlib==3.7.1 seaborn==0.12.2
 
 # R
 RUN R --slave -e 'install.packages(c("RColorBrewer", "TeachingDemos"))'
@@ -57,17 +52,11 @@ RUN wget https://github.com/samtools/bcftools/releases/download/1.16/bcftools-1.
     && cd bcftools-1.16 && ./configure && make && make install
 
 WORKDIR /GenomeChronicler
-COPY GenomeChronicler_mainDruid.pl /GenomeChronicler/
 COPY scripts/ /GenomeChronicler/scripts
 COPY templates/ /GenomeChronicler/templates/
 
-RUN wget -O - https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/reference.tar.gz | tar -zxvf
-
-RUN wget -O - https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz | \
-    tar zxvf - software.linux && mv software.linux software
-
-RUN apt update && apt-get install -y python3 python3-pip
-RUN pip3 install fire==0.5.0 pandas==1.5.3 xlsxwriter==3.0.9 tqdm==4.65.0 matplotlib==3.7.1 seaborn==0.12.2
+RUN wget -qO- https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/reference.tar.gz | tar xvz
+RUN wget -qO- https://github.com/PGP-UK/GenomeChronicler/releases/download/0.91/software.tar.gz | tar xvz software.linux && mv software.linux software
 
 ENV PATH "$PATH:/GenomeChronicler/scripts"
 
