@@ -132,8 +132,9 @@ echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
 2. Build docker image and upload to Github Packages
 
 ```bash
-docker build -t ghcr.io/pgp-uk/genomechronicler:latest .
-docker build -t ghcr.io/pgp-uk/genomechronicler:v0.0.3 .
+
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/pgp-uk/genomechronicler:latest .
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/pgp-uk/genomechronicler:v0.0.3 .
 
 docker push ghcr.io/pgp-uk/genomechronicler:latest
 docker push ghcr.io/pgp-uk/genomechronicler:v0.0.3
