@@ -1,11 +1,9 @@
-import os
-import re
 from pathlib import Path
 
 import fire
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import patches
 
@@ -122,6 +120,7 @@ def plot_generator_from_ancestry(eigenvec_path, sample_id, output_dir):
     ax_zoom.set_yticks([])
 
     fig.savefig(f"{output_dir}/AncestryPlot.pdf", format='pdf', dpi=150, bbox_inches='tight')
+    fig.savefig(f"{output_dir}/AncestryPlot.png", format='png', dpi=150, bbox_inches='tight')
 
 if __name__ == '__main__':
     fire.Fire(plot_generator_from_ancestry)

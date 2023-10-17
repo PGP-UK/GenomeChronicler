@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
-
-import subprocess
-import sys
 import re
+import subprocess
 from pathlib import Path
 
 import fire
@@ -13,27 +10,55 @@ def ucfirst(s):
     else:
         return s
 
-def get_vepTables_from_VEP(filename, out_dir="."):
 
-    # # Sort out input
-    # if len(sys.argv) != 3:
-    #     sys.exit("Usage: {} VEPhtml OutputDir".format(sys.argv[0]))
+def clean_bam_file_noCHR(bam_path, output_dir=None):
+    """
+    Reheader the BAM file and create an index
+    - Remove the "chr" prefix from the chromosome names
 
-    # filename = sys.argv[1]
-    # out_dir = sys.argv[2]
+    Input: .bam
+    Output: .clean.bam, .clean.bam.bai
 
-    # if not os.path.exists(filename):
-    #     sys.exit("Major error here (File not found)")
+    Parameters
+    ----------
+    bam_path: str or Path
+        BAM file path
+    output_dir: str, Path or None
+        - If None, the output file will be saved in the same directory as the input file
+        - Else, the output file will be saved in the specified directory
 
-    out_file = open("{}/latest.summary.csv".format(out_dir), "w")
+    Returns
+    -------
+    None
+
+    """
+    # Reheader the BAM file and create an index
+    bam_path = Path(bam_path)
+    if output_dir is None:
+        output_dir = bam_path.parent
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = output_dir/ f"{bam_path.stem}.clean.BAM"
+    subprocess.run(
+        f"samtools reheader -c 'perl -pe \"s/^(@SQ.*)(\tSN:)chr/\$1\$2/\"' {bam_path} > {output_path}",
+        shell=True)
+
+    print(f"\t +++ INFO: Indexing the BAM file")
+    subprocess.run(f"samtools index -@ 6 {output_path}", shell=True)
+
+
+def get_vep_tables_from_vep(vep_path, output_dir):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    out_file = open(f"{output_dir}/latest.summary.csv", "w")
     out_file.write("Feature\tCount\n")
 
     recording = 0
-    # with (filename, "r") as in_file:
-    with subprocess.Popen(f'cat {filename} | grep "gen_stats"', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+    with subprocess.Popen(f'cat {vep_path} | grep "gen_stats"', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
         for line in proc.stdout:
             line = line.decode()
-            # line = line.strip()
             line = line.rstrip("\n")
             if not line:
                 continue
@@ -70,7 +95,7 @@ def get_vepTables_from_VEP(filename, out_dir="."):
     # in_file.close()
     out_file.close()
 
-    with open(filename, "r") as in_file:
+    with open(vep_path, "r") as in_file:
         for line in in_file:
             line = line.strip()
             if not line or "drawTable" not in line or "[" not in line:
@@ -97,7 +122,7 @@ def get_vepTables_from_VEP(filename, out_dir="."):
 
                     counter += 1
 
-                out_file = open("{}/latest.{}.csv".format(out_dir, tab_name), "w")
+                out_file = open("{}/latest.{}.csv".format(output_dir, tab_name), "w")
 
                 head = table.pop(0)
                 head[0] = "Label"
@@ -117,8 +142,21 @@ def get_vepTables_from_VEP(filename, out_dir="."):
                     perc = f"{round(float(other) / summer * 100, 2):0.2f}"
                     out_file.write(f"Others,{perc}\n")
                     # out_file.write("{}\n".format(",".join([str(x) for x in d])))
-                   
+
+
+funcs = {
+    'clean_bam_file_noCHR': clean_bam_file_noCHR,
+    'get_vep_tables_from_vep': get_vep_tables_from_vep,
+}
+
+
+class UtilsTools(object):
+    def __init__(self):
+        super(UtilsTools, self).__init__()
 
 
 if __name__ == '__main__':
-    fire.Fire(get_vepTables_from_VEP)
+    for k, v in funcs.items():
+        setattr(UtilsTools, k, staticmethod(v))
+    fire.Fire(UtilsTools)
+

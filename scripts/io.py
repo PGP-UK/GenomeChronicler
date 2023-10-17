@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
-# import sys
-# import os
 import csv
+import os
+import shutil
+import subprocess
 from pathlib import Path
 
-# import pandas as pd
 import fire
 import xlsxwriter
 
 
 def export_genotypes_xlsx_from_csvs(csv_dir, xlsx_output_path,
-        csv_path_good='latest.good.reportTable.csv', 
+        csv_path_good='latest.good.reportTable.csv',
         csv_path_bad='latest.bad.reportTable.csv', 
         csv_path_genoset='latest.genoset.reportTable.csv',
     ):
@@ -101,5 +101,105 @@ def export_genotypes_xlsx_from_csvs(csv_dir, xlsx_output_path,
 
     workbook.close()
 
+def render_latex(tables_dir, sample_name, output_dir,
+                 plot_path=None, vep_dir=None,
+                 template_dir="templates", latex_template=None,
+                 ):
+    """
+    Render the latex template with the tables and the version table
+
+    Template
+    -
+
+    Latex render files:
+        Common:
+            latexTemplate.tex
+            versionTable.txt
+            GeneStructure.pdf
+
+        Personal:
+            SampleName.txt
+            latest.good.reportTable.csv
+            latest.bad.reportTable.csv
+            latest.genoset.reportTable.csv
+
+        with VEP:
+            latest.summary.csv
+            latest.polyphen_table.csv
+            latest.var_class_table.csv
+            latest.var_cons_table.csv
+
+    Parameters
+    ----------
+    tables_dir
+    sample_name
+    output_dir
+
+    Returns
+    -------
+
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    template_dir = Path(template_dir)
+
+    if latex_template is None:
+        if vep_dir is not None:
+            latex_template = template_dir/f"reportTemplate_withVEP.tex"
+        else:
+            latex_template = template_dir/f"reportTemplate_ohneVEP.tex"
+
+    # Prepare files for latex rendering
+    ## Main file
+    latex_main_name = f"{sample_name}_report"
+    shutil.copy(latex_template, f"{output_dir}/{latex_main_name}.tex")
+
+    ## Common files
+    shutil.copy(template_dir/f"versionTable.txt", output_dir)
+    shutil.copy(template_dir/f"GeneStructure.pdf", output_dir)
+
+    ## Personal files
+    with open(f"{output_dir}/SampleName.txt", "w") as f:
+        f.write(sample_name)
+    tables_dir = Path(tables_dir)
+    shutil.copy(tables_dir/f"latest.good.reportTable.csv", output_dir)
+    shutil.copy(tables_dir/f"latest.bad.reportTable.csv", output_dir)
+    shutil.copy(tables_dir/f"latest.genoset.reportTable.csv", output_dir)
+    if plot_path is not None:
+        shutil.copy(plot_path, output_dir/'AncestryPlot.pdf')
+
+    ## VEP files
+    if vep_dir is not None:
+        vep_dir = Path(vep_dir)
+        shutil.copy(vep_dir/f"latest.summary.csv", output_dir)
+        shutil.copy(vep_dir/f"latest.polyphen_table.csv", output_dir)
+        shutil.copy(vep_dir/f"latest.var_class_table.csv", output_dir)
+        shutil.copy(vep_dir/f"latest.var_cons_table.csv", output_dir)
+
+
+    # Render latex
+    cwd = os.getcwd()
+    os.chdir(f"{output_dir}")
+    for _ in range(3):
+        cmd = f"pdflatex -interaction=nonstopmode {latex_main_name}.tex 2> /dev/null > /dev/null"
+        ret = subprocess.run(cmd, shell=True)
+    os.chdir(cwd)
+
+
+funcs = {
+    'export_genotypes_xlsx_from_csvs': export_genotypes_xlsx_from_csvs,
+    'render_latex': render_latex,
+}
+
+
+class Tools(object):
+    def __init__(self):
+        super(Tools, self).__init__()
+
+
 if __name__ == '__main__':
-    fire.Fire(export_genotypes_xlsx_from_csvs)
+    for k, v in funcs.items():
+        setattr(Tools, k, staticmethod(v))
+    fire.Fire(Tools)
+
+
