@@ -49,13 +49,17 @@ singularity pull docker://ghcr.io/pgp-uk/genomechronicler:latest
 2. Converting data to BAM format
 
 ```bash
-singularity exec GenomeChronicler_latest.sif samtools view -@ 8 -T hg38.fa -b -o NA12878wxs.bam na12878wxs.cram
+singularity exec genomechronicler_latest.sif samtools view -@ 8 -T hg38.fa -b -o NA12878wxs.bam na12878wxs.cram
 ```
 
-Running GenomeChronicler on the data
+Running GenomeChronicler on the data using apptainer/singularity
 
 ```bash
-singularity run GenomeChronicler_latest.sif --bamFile=NA12878wxs.bam --GATKthreads 8
+# With gVCF
+singularity exec genomechronicler_latest.sif genomechronicler --vcfFile=NA12878wxs.g.vcf
+
+# With a BAM
+singularity exec genomechronicler_latest.sif genomechronicler --bamFile=NA12878wxs.bam --GATKthreads 8
 ```
 
 > Note: you can use `singularity shell` to open an interactive linux to run commands directly
