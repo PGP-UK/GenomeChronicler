@@ -35,6 +35,7 @@ RUN apt-get install -y \
         texlive-fonts-recommended \
         texlive-latex-extra \
         lmodern \
+        cm-super \
     && apt-get clean \
     && apt-get purge \
     && rm -rf /var/lib/apt/lists/* /tmp/*
