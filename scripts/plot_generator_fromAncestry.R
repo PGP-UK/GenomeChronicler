@@ -1,11 +1,11 @@
 library(RColorBrewer)
 library(TeachingDemos)
 
-sample <- as.character(Sys.getenv("SAMPLE"))
+pca_path <- as.character(Sys.getenv("PCA_PATH"))
 id <- as.character(Sys.getenv("ID"))
-dir <- as.character(Sys.getenv("DIR"))
+output_dir <- as.character(Sys.getenv("OUTPUT_DIR"))
 
-data <- read.table(paste0(dir,"/results/results_",sample,"/temp/",sample, "_1kGP_pruned_pca_20.eigenvec"), header=F)
+data <- read.table(pca_path, header=F)
 
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 mypalette = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
@@ -156,7 +156,7 @@ for(i in 1:length(zoom_data[,1])){
 }
 
 #pdf(paste0("./results/results_",sample,"/",sample, "_ancestry_pca.pdf"))
-pdf(paste0(dir,"/results/results_",sample,"/AncestryPlot.pdf"))
+pdf(paste0(output_dir,"/AncestryPlot.pdf"))
 
 plot(data[, 3] + 0.5 * data[, 4] - 0.5 * data[, 5], sin(pi / 3) * data[,4] + sin(pi / 3) * data[, 5], col = all.colors, pch = 19, cex = 0.3, xaxt='n', yaxt='n', xlab="", ylab="", main=paste0("Ancestry ",id))
 points(data[pgp, 3] + 0.5 * data[pgp, 4] - 0.5 * data[pgp, 5], sin(pi / 3) * data[pgp,4] + sin(pi / 3) * data[pgp, 5], col = "black", pch = 16, cex = 1)
@@ -181,5 +181,3 @@ cexs <- c(rep(0.5, nrow(zoom_data) - 2), 1.2, 1.2)
 subplot(plot(zoom_data[, 3] + 0.5 * zoom_data[, 4] - 0.5 * zoom_data[, 5], sin(pi / 3) * zoom_data[,4] + sin(pi / 3) * zoom_data[, 5], col = zoom.colors, pch = pchs, cex = cexs,  xlab="", ylab="", xaxt='n', yaxt='n', xlim=c(bottom_x, top_x), ylim=c(bottom_y,top_y)), x = "topleft", size = c(1.7,1.7))
 
 dev.off()
-
-
