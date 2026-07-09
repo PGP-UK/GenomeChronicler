@@ -52,6 +52,7 @@ RUN wget https://github.com/samtools/bcftools/releases/download/1.16/bcftools-1.
     && cd bcftools-1.16 && ./configure && make && make install
 
 WORKDIR /GenomeChronicler
+COPY main.py /GenomeChronicler/main.py
 COPY scripts/ /GenomeChronicler/scripts
 COPY templates/ /GenomeChronicler/templates/
 
